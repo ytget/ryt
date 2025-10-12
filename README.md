@@ -1,7 +1,7 @@
 # RYT - Rust Video Downloader
 
 <div align="center">
-  <img src="imgs/logos/ryt-logo-v2.png" alt="RYT - Rust Video Downloader - Logo" width="200">
+  <img src="imgs/logos/ryt-logo-wbg-v4.png" alt="RYT - Rust Video Downloader - Logo" width="200">
 </div>
 
 [![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org)
