@@ -2144,7 +2144,7 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "abc123";
         let body = "a.reverse();";
-        
+
         let result = cipher.try_common_patterns(signature, body);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "321cba");
@@ -2156,7 +2156,7 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "abc123";
         let body = "a.splice(0, 1);";
-        
+
         let result = cipher.try_common_patterns(signature, body);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "bc123");
@@ -2168,7 +2168,7 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "abc123";
         let body = "a.slice(1);";
-        
+
         let result = cipher.try_common_patterns(signature, body);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "bc123");
@@ -2180,7 +2180,7 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "abc123";
         let body = "var b=a[0];a[0]=a[2];a[2]=b;";
-        
+
         let result = cipher.try_common_patterns(signature, body);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "cba123");
@@ -2191,7 +2191,7 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "abc123";
         let body = "";
-        
+
         let result = cipher.try_common_patterns(signature, body);
         assert!(result.is_err());
     }
@@ -2201,7 +2201,7 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "abc123";
         let body = "a.unknown();";
-        
+
         let result = cipher.try_common_patterns(signature, body);
         assert!(result.is_err());
     }
@@ -2210,13 +2210,13 @@ mod tests {
     fn test_try_simple_fallback() {
         let cipher = Cipher::new();
         let signature = "abc123";
-        
+
         let result = cipher.try_simple_fallback(signature);
         assert!(result.is_ok());
         // Simple fallback should return some transformation of the signature
         let result_str = result.unwrap();
         assert_ne!(result_str, signature); // Should be different from original
-        // Note: some transformations may change length, so we don't check length
+                                           // Note: some transformations may change length, so we don't check length
     }
 
     #[test]
@@ -2230,7 +2230,7 @@ mod tests {
                 return a.join("");
             }
         "#;
-        
+
         let result = cipher.try_approach_1(signature, player_js);
         assert!(result.is_ok());
     }
@@ -2240,7 +2240,7 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "abc123";
         let player_js = "function test() { return 'hello'; }";
-        
+
         let result = cipher.try_approach_1(signature, player_js);
         assert!(result.is_err());
     }
@@ -2256,7 +2256,7 @@ mod tests {
                 return a.join("");
             }
         "#;
-        
+
         let result = cipher.try_approach_2(signature, player_js);
         assert!(result.is_ok());
     }
@@ -2272,7 +2272,7 @@ mod tests {
                 return a;
             }
         "#;
-        
+
         let result = cipher.try_approach_3(signature, player_js);
         assert!(result.is_ok());
     }

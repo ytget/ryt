@@ -26,7 +26,14 @@ jobs:
         
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
-      
+      with:
+        toolchain: stable
+        
+    - name: Add Rust targets
+      run: |
+        rustup target add x86_64-apple-darwin
+        rustup target add aarch64-apple-darwin
+        
     - name: Set up environment
       run: |
         echo "CARGO_REGISTRY_TOKEN=${{ secrets.CARGO_REGISTRY_TOKEN }}" >> $GITHUB_ENV
@@ -64,6 +71,7 @@ jobs:
         echo "tag=$TAG" >> $GITHUB_OUTPUT
         
     - name: Create GitHub Release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,9 +92,9 @@ jobs:
         # Build for multiple platforms
         mkdir -p dist
         
-        # Linux x86_64
-        cargo build --release --target x86_64-unknown-linux-gnu
-        cp target/x86_64-unknown-linux-gnu/release/ryt dist/ryt-linux-x86_64
+        # Linux x86_64 (current platform)
+        cargo build --release
+        cp target/release/ryt dist/ryt-linux-x86_64
         
         # macOS x86_64
         cargo build --release --target x86_64-apple-darwin
@@ -96,19 +104,36 @@ jobs:
         cargo build --release --target aarch64-apple-darwin
         cp target/aarch64-apple-darwin/release/ryt dist/ryt-macos-aarch64
         
-        # Windows x86_64
-        cargo build --release --target x86_64-pc-windows-gnu
-        cp target/x86_64-pc-windows-gnu/release/ryt.exe dist/ryt-windows-x86_64.exe
-        
     - name: Upload binaries to release
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/
-        asset_name: ryt-binaries
-        asset_content_type: application/zip
+        asset_path: ./dist/ryt-linux-x86_64
+        asset_name: ryt-linux-x86_64
+        asset_content_type: application/octet-stream
+        
+    - name: Upload macOS x86_64 binary
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/ryt-macos-x86_64
+        asset_name: ryt-macos-x86_64
+        asset_content_type: application/octet-stream
+        
+    - name: Upload macOS ARM64 binary
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/ryt-macos-aarch64
+        asset_name: ryt-macos-aarch64
+        asset_content_type: application/octet-stream
+        
         
     - name: Publish to crates.io
       if: startsWith(steps.changelog.outputs.tag, 'v')
