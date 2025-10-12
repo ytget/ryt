@@ -1,6 +1,6 @@
 # RYT - Rust Video Downloader
 
-[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Build Status](https://github.com/ytget/ryt/workflows/CI/badge.svg)](https://github.com/ytget/ryt/actions)
 [![codecov](https://codecov.io/gh/ytget/ryt/branch/main/graph/badge.svg)](https://codecov.io/gh/ytget/ryt)
@@ -142,8 +142,38 @@ ryt/
 ### Running Tests
 
 ```bash
+# Run all tests
 cargo test
+
+# Run tests with output
+cargo test -- --nocapture
+
+# Run specific test
+cargo test test_name
 ```
+
+### Code Coverage
+
+Check test coverage locally:
+
+```bash
+# Install tarpaulin (once)
+cargo install cargo-tarpaulin
+
+# Generate HTML coverage report
+cargo tarpaulin --out Html --output-dir coverage
+
+# Open report in browser
+open coverage/index.html  # macOS
+xdg-open coverage/index.html  # Linux
+```
+
+The project uses [Codecov](https://codecov.io/gh/ytget/ryt) for tracking coverage:
+- **Target**: 70% minimum coverage
+- **Reports**: Automatic on every PR
+- **Badge**: ![codecov](https://codecov.io/gh/ytget/ryt/branch/main/graph/badge.svg)
+
+See [.codecov_setup.md](.codecov_setup.md) for setup instructions.
 
 ### Code Quality
 
@@ -183,6 +213,25 @@ make fmt       # Format code
 - **thiserror** - Typed errors
 - **deno_core** - JavaScript execution for signature decryption
 
+## CI/CD Pipeline
+
+Every commit and PR is automatically checked by GitHub Actions:
+
+| Check | Status | Description |
+|-------|--------|-------------|
+| **Tests** | ![Tests](https://github.com/ytget/ryt/workflows/CI/badge.svg) | Run on Ubuntu, macOS, Windows |
+| **Clippy** | ✅ | Rust linter with strict mode |
+| **Format** | ✅ | Code formatting check |
+| **Coverage** | ![codecov](https://codecov.io/gh/ytget/ryt/branch/main/graph/badge.svg) | Minimum 70% required |
+| **Build** | ✅ | Release builds on all platforms |
+
+The CI ensures:
+- ✅ All tests pass on multiple platforms
+- ✅ No clippy warnings
+- ✅ Consistent code formatting
+- ✅ Adequate test coverage
+- ✅ Successful release builds
+
 ## Project Status
 
 ✅ **Production Ready** - Core functionality is fully implemented
@@ -195,6 +244,7 @@ make fmt       # Format code
 - [x] Signature decryption
 - [x] Botguard protection
 - [x] Testing (71/71 tests passing)
+- [x] CI/CD Pipeline
 
 ## Contributing
 

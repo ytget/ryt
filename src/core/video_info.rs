@@ -149,15 +149,16 @@ impl Format {
 
     /// Check if format is progressive (video+audio combined)
     pub fn is_progressive(&self) -> bool {
-        self.mime_type.starts_with("video/") && 
-        (self.mime_type.contains("mp4") || self.mime_type.contains("webm")) &&
-        self.audio_codec.is_some() && self.video_codec.is_some()
+        self.mime_type.starts_with("video/")
+            && (self.mime_type.contains("mp4") || self.mime_type.contains("webm"))
+            && self.audio_codec.is_some()
+            && self.video_codec.is_some()
     }
 
     /// Check if format is adaptive (video or audio only)
     pub fn is_adaptive(&self) -> bool {
-        (self.mime_type.starts_with("video/") && self.audio_codec.is_none()) || 
-        self.mime_type.starts_with("audio/")
+        (self.mime_type.starts_with("video/") && self.audio_codec.is_none())
+            || self.mime_type.starts_with("audio/")
     }
 
     /// Check if format is video-only
@@ -182,10 +183,10 @@ impl Format {
 
     /// Check if format needs signature deciphering
     pub fn needs_deciphering(&self) -> bool {
-        self.signature_cipher.is_some() || 
-        self.url.contains("&n=") || 
-        self.url.contains("?n=") ||
-        self.url.is_empty()
+        self.signature_cipher.is_some()
+            || self.url.contains("&n=")
+            || self.url.contains("?n=")
+            || self.url.is_empty()
     }
 
     /// Get human-readable quality string
@@ -330,29 +331,33 @@ impl QualitySelector {
     /// Parse quality selector from string
     pub fn from_str(s: &str) -> Result<Self, String> {
         let s = s.trim().to_lowercase();
-        
+
         match s.as_str() {
             "best" => Ok(QualitySelector::Best),
             "worst" => Ok(QualitySelector::Worst),
             _ => {
                 if s.starts_with("itag=") {
                     let itag_str = &s[5..];
-                    let itag = itag_str.parse::<u32>()
+                    let itag = itag_str
+                        .parse::<u32>()
                         .map_err(|_| format!("Invalid itag: {}", itag_str))?;
                     Ok(QualitySelector::Itag(itag))
                 } else if s.starts_with("height<=") {
                     let height_str = &s[8..];
-                    let height = height_str.parse::<u32>()
+                    let height = height_str
+                        .parse::<u32>()
                         .map_err(|_| format!("Invalid height: {}", height_str))?;
                     Ok(QualitySelector::HeightLessOrEqual(height))
                 } else if s.starts_with("height>=") {
                     let height_str = &s[8..];
-                    let height = height_str.parse::<u32>()
+                    let height = height_str
+                        .parse::<u32>()
                         .map_err(|_| format!("Invalid height: {}", height_str))?;
                     Ok(QualitySelector::HeightGreaterOrEqual(height))
                 } else if s.starts_with("height=") {
                     let height_str = &s[7..];
-                    let height = height_str.parse::<u32>()
+                    let height = height_str
+                        .parse::<u32>()
                         .map_err(|_| format!("Invalid height: {}", height_str))?;
                     Ok(QualitySelector::Height(height))
                 } else {
@@ -377,7 +382,12 @@ mod tests {
 
     #[test]
     fn test_format_creation() {
-        let format = Format::new(22, "http://example.com".to_string(), "720p".to_string(), "video/mp4".to_string());
+        let format = Format::new(
+            22,
+            "http://example.com".to_string(),
+            "720p".to_string(),
+            "video/mp4".to_string(),
+        );
         assert_eq!(format.itag, 22);
         assert_eq!(format.quality, "720p");
         assert_eq!(format.mime_type, "video/mp4");
@@ -385,17 +395,27 @@ mod tests {
 
     #[test]
     fn test_format_progressive() {
-        let mut format = Format::new(22, "http://example.com".to_string(), "720p".to_string(), "video/mp4".to_string());
+        let mut format = Format::new(
+            22,
+            "http://example.com".to_string(),
+            "720p".to_string(),
+            "video/mp4".to_string(),
+        );
         format.audio_codec = Some("aac".to_string());
         format.video_codec = Some("avc1".to_string());
-        
+
         assert!(format.is_progressive());
         assert!(!format.is_adaptive());
     }
 
     #[test]
     fn test_format_adaptive() {
-        let format = Format::new(137, "http://example.com".to_string(), "1080p".to_string(), "video/mp4".to_string());
+        let format = Format::new(
+            137,
+            "http://example.com".to_string(),
+            "1080p".to_string(),
+            "video/mp4".to_string(),
+        );
         assert!(!format.is_progressive());
         assert!(format.is_adaptive());
         assert!(format.is_video_only());
@@ -403,13 +423,31 @@ mod tests {
 
     #[test]
     fn test_quality_selector_parsing() {
-        assert_eq!(QualitySelector::from_str("best").unwrap(), QualitySelector::Best);
-        assert_eq!(QualitySelector::from_str("worst").unwrap(), QualitySelector::Worst);
-        assert_eq!(QualitySelector::from_str("itag=22").unwrap(), QualitySelector::Itag(22));
-        assert_eq!(QualitySelector::from_str("height<=720").unwrap(), QualitySelector::HeightLessOrEqual(720));
-        assert_eq!(QualitySelector::from_str("height>=480").unwrap(), QualitySelector::HeightGreaterOrEqual(480));
-        assert_eq!(QualitySelector::from_str("height=1080").unwrap(), QualitySelector::Height(1080));
-        
+        assert_eq!(
+            QualitySelector::from_str("best").unwrap(),
+            QualitySelector::Best
+        );
+        assert_eq!(
+            QualitySelector::from_str("worst").unwrap(),
+            QualitySelector::Worst
+        );
+        assert_eq!(
+            QualitySelector::from_str("itag=22").unwrap(),
+            QualitySelector::Itag(22)
+        );
+        assert_eq!(
+            QualitySelector::from_str("height<=720").unwrap(),
+            QualitySelector::HeightLessOrEqual(720)
+        );
+        assert_eq!(
+            QualitySelector::from_str("height>=480").unwrap(),
+            QualitySelector::HeightGreaterOrEqual(480)
+        );
+        assert_eq!(
+            QualitySelector::from_str("height=1080").unwrap(),
+            QualitySelector::Height(1080)
+        );
+
         assert!(QualitySelector::from_str("invalid").is_err());
     }
 
@@ -418,7 +456,7 @@ mod tests {
         let selector = FormatSelector::new(QualitySelector::Best)
             .with_extension("mp4")
             .with_height_limit(720);
-        
+
         assert!(matches!(selector.quality, QualitySelector::Best));
         assert_eq!(selector.extension, Some("mp4".to_string()));
         assert_eq!(selector.height_limit, Some(720));

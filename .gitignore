@@ -17,6 +17,12 @@ release/
 *.profraw
 *.profdata
 
+# Coverage reports
+coverage/
+*.lcov
+cobertura.xml
+tarpaulin-report.html
+
 # IDE - JetBrains
 .idea/
 *.iml

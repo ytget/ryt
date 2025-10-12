@@ -137,9 +137,9 @@ impl Args {
 
     /// Parse rate limit string to bytes per second
     pub fn parse_rate_limit(&self) -> Option<u64> {
-        self.rate_limit.as_ref().and_then(|rate| {
-            parse_rate_limit(rate)
-        })
+        self.rate_limit
+            .as_ref()
+            .and_then(|rate| parse_rate_limit(rate))
     }
 
     /// Check if this is a playlist operation

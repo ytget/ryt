@@ -7,4 +7,3 @@ pub mod retry;
 pub use downloader::*;
 pub use progress::*;
 pub use retry::*;
-

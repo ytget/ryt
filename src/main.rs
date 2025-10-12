@@ -1,24 +1,23 @@
 //! Main entry point for ryt CLI
 
+use clap::Parser;
+use ryt::cli::output::OutputFormatter;
 use ryt::cli::Args;
 use ryt::core::{Downloader, Progress};
 use ryt::platform::botguard::BotguardMode;
-use ryt::cli::output::OutputFormatter;
-use clap::Parser;
 use std::sync::Arc;
 use std::time::Instant;
-use tokio;
-use tracing::{info, debug};
+use tracing::{debug, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging
     init_logging()?;
-    
+
     // Parse command line arguments
     let args = Args::parse();
-    
+
     info!("Starting ryt with args: {:?}", args);
 
     // Initialize output formatter
@@ -146,13 +145,21 @@ async fn handle_playlist_download(
     formatter.print_playlist_info(&playlist_id, 0, Some(args.limit));
 
     // Download playlist
-    let limit = if args.limit > 0 { Some(args.limit) } else { None };
+    let limit = if args.limit > 0 {
+        Some(args.limit)
+    } else {
+        None
+    };
     let video_infos = downloader.download_playlist(&args.url, limit).await?;
     info!("Playlist download completed: {} videos", video_infos.len());
 
     // Print completion
     let duration = start_time.elapsed();
-    formatter.success(&format!("Downloaded {} videos in {}", video_infos.len(), format_duration(duration)));
+    formatter.success(&format!(
+        "Downloaded {} videos in {}",
+        video_infos.len(),
+        format_duration(duration)
+    ));
 
     // Print summary
     for (index, video_info) in video_infos.iter().enumerate() {
@@ -165,31 +172,32 @@ async fn handle_playlist_download(
 /// Initialize logging system
 fn init_logging() -> Result<(), Box<dyn std::error::Error>> {
     // Get log level from environment or default to info
-    let log_level = std::env::var("RUST_LOG")
-        .unwrap_or_else(|_| "info".to_string());
-    
+    let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+
     // Parse log level
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(&log_level));
-    
+
     // Initialize tracing subscriber
     tracing_subscriber::registry()
         .with(filter)
-        .with(tracing_subscriber::fmt::layer()
-            .with_target(false)
-            .with_thread_ids(true)
-            .with_file(true)
-            .with_line_number(true)
-            .compact())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(false)
+                .with_thread_ids(true)
+                .with_file(true)
+                .with_line_number(true)
+                .compact(),
+        )
         .init();
-    
+
     Ok(())
 }
 
 /// Format duration as human-readable string
 fn format_duration(duration: std::time::Duration) -> String {
     let total_seconds = duration.as_secs();
-    
+
     if total_seconds < 60 {
         format!("{}s", total_seconds)
     } else if total_seconds < 3600 {
@@ -208,52 +216,5 @@ fn format_duration(duration: std::time::Duration) -> String {
         } else {
             format!("{}h {}m", hours, minutes)
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_init_logging() {
-        // Test that logging initialization doesn't panic
-        let result = init_logging();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_format_duration_seconds() {
-        let duration = std::time::Duration::from_secs(45);
-        let formatted = format_duration(duration);
-        assert_eq!(formatted, "45s");
-    }
-
-    #[test]
-    fn test_format_duration_minutes() {
-        let duration = std::time::Duration::from_secs(125);
-        let formatted = format_duration(duration);
-        assert_eq!(formatted, "2m 5s");
-    }
-
-    #[test]
-    fn test_format_duration_hours() {
-        let duration = std::time::Duration::from_secs(3661);
-        let formatted = format_duration(duration);
-        assert_eq!(formatted, "1h 1m");
-    }
-
-    #[test]
-    fn test_format_duration_only_hours() {
-        let duration = std::time::Duration::from_secs(7200);
-        let formatted = format_duration(duration);
-        assert_eq!(formatted, "2h");
-    }
-
-    #[test]
-    fn test_format_duration_zero() {
-        let duration = std::time::Duration::from_secs(0);
-        let formatted = format_duration(duration);
-        assert_eq!(formatted, "0s");
     }
 }

@@ -49,7 +49,9 @@ impl RetryExecutor {
     /// Execute a function with retry logic
     pub async fn execute<F, T>(&self, mut func: F) -> Result<T, RytError>
     where
-        F: FnMut() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, RytError>> + Send>>,
+        F: FnMut() -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<T, RytError>> + Send>,
+        >,
     {
         let mut last_error = None;
         let mut delay = self.config.initial_delay;
@@ -81,7 +83,7 @@ impl RetryExecutor {
 
                         // Calculate next delay with exponential backoff
                         delay = Duration::from_millis(
-                            (delay.as_millis() as f64 * self.config.backoff_multiplier) as u64
+                            (delay.as_millis() as f64 * self.config.backoff_multiplier) as u64,
                         );
 
                         // Cap at maximum delay
@@ -103,7 +105,9 @@ impl RetryExecutor {
         error_handler: E,
     ) -> Result<T, RytError>
     where
-        F: FnMut() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, RytError>> + Send>>,
+        F: FnMut() -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<T, RytError>> + Send>,
+        >,
         E: Fn(&RytError) -> bool, // Returns true if error is retryable
     {
         let mut last_error = None;
@@ -136,7 +140,7 @@ impl RetryExecutor {
 
                         // Calculate next delay with exponential backoff
                         delay = Duration::from_millis(
-                            (delay.as_millis() as f64 * self.config.backoff_multiplier) as u64
+                            (delay.as_millis() as f64 * self.config.backoff_multiplier) as u64,
                         );
 
                         // Cap at maximum delay
@@ -216,7 +220,10 @@ impl Default for RetryConfigBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
+    use std::sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc,
+    };
 
     #[test]
     fn test_retry_config_default() {
@@ -250,20 +257,22 @@ mod tests {
         let executor = RetryExecutor::new();
         let counter = Arc::new(AtomicU32::new(0));
 
-        let result: Result<String, RytError> = executor.execute({
-            let counter = counter.clone();
-            move || {
+        let result: Result<String, RytError> = executor
+            .execute({
                 let counter = counter.clone();
-                Box::pin(async move {
-                    let count = counter.fetch_add(1, Ordering::SeqCst);
-                    if count == 0 {
-                        Err(RytError::TimeoutError("test error".to_string()))
-                    } else {
-                        Ok("Success".to_string())
-                    }
-                })
-            }
-        }).await;
+                move || {
+                    let counter = counter.clone();
+                    Box::pin(async move {
+                        let count = counter.fetch_add(1, Ordering::SeqCst);
+                        if count == 0 {
+                            Err(RytError::TimeoutError("test error".to_string()))
+                        } else {
+                            Ok("Success".to_string())
+                        }
+                    })
+                }
+            })
+            .await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "Success");
@@ -275,16 +284,18 @@ mod tests {
         let executor = RetryExecutor::new();
         let counter = Arc::new(AtomicU32::new(0));
 
-        let result: Result<String, RytError> = executor.execute({
-            let counter = counter.clone();
-            move || {
+        let result: Result<String, RytError> = executor
+            .execute({
                 let counter = counter.clone();
-                Box::pin(async move {
-                    counter.fetch_add(1, Ordering::SeqCst);
-                    Err(RytError::TimeoutError("test error".to_string()))
-                })
-            }
-        }).await;
+                move || {
+                    let counter = counter.clone();
+                    Box::pin(async move {
+                        counter.fetch_add(1, Ordering::SeqCst);
+                        Err(RytError::TimeoutError("test error".to_string()))
+                    })
+                }
+            })
+            .await;
 
         assert!(result.is_err());
         assert_eq!(counter.load(Ordering::SeqCst), 4); // 1 initial + 3 retries
@@ -295,16 +306,18 @@ mod tests {
         let executor = RetryExecutor::new();
         let counter = Arc::new(AtomicU32::new(0));
 
-        let result: Result<String, RytError> = executor.execute({
-            let counter = counter.clone();
-            move || {
+        let result: Result<String, RytError> = executor
+            .execute({
                 let counter = counter.clone();
-                Box::pin(async move {
-                    counter.fetch_add(1, Ordering::SeqCst);
-                    Err(RytError::VideoUnavailable) // Non-retryable error
-                })
-            }
-        }).await;
+                move || {
+                    let counter = counter.clone();
+                    Box::pin(async move {
+                        counter.fetch_add(1, Ordering::SeqCst);
+                        Err(RytError::VideoUnavailable) // Non-retryable error
+                    })
+                }
+            })
+            .await;
 
         assert!(result.is_err());
         assert_eq!(counter.load(Ordering::SeqCst), 1); // Only one attempt
@@ -315,22 +328,24 @@ mod tests {
         let executor = RetryExecutor::new();
         let counter = Arc::new(AtomicU32::new(0));
 
-        let result: Result<String, RytError> = executor.execute_with_error_handler(
-            {
-                let counter = counter.clone();
-                move || {
+        let result: Result<String, RytError> = executor
+            .execute_with_error_handler(
+                {
                     let counter = counter.clone();
-                    Box::pin(async move {
-                        counter.fetch_add(1, Ordering::SeqCst);
-                        Err(RytError::TimeoutError("test error".to_string()))
-                    })
-                }
-            },
-            |error| {
-                // Only retry on HTTP errors
-                matches!(error, RytError::TimeoutError(_))
-            },
-        ).await;
+                    move || {
+                        let counter = counter.clone();
+                        Box::pin(async move {
+                            counter.fetch_add(1, Ordering::SeqCst);
+                            Err(RytError::TimeoutError("test error".to_string()))
+                        })
+                    }
+                },
+                |error| {
+                    // Only retry on HTTP errors
+                    matches!(error, RytError::TimeoutError(_))
+                },
+            )
+            .await;
 
         assert!(result.is_err());
         assert_eq!(counter.load(Ordering::SeqCst), 4); // 1 initial + 3 retries

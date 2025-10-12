@@ -4,7 +4,10 @@ use crate::core::video_info::{Format, FormatSelector, QualitySelector};
 use crate::error::RytError;
 
 /// Select the best format based on selector criteria
-pub fn select_format<'a>(formats: &'a [Format], selector: &FormatSelector) -> Result<&'a Format, RytError> {
+pub fn select_format<'a>(
+    formats: &'a [Format],
+    selector: &FormatSelector,
+) -> Result<&'a Format, RytError> {
     let mut candidates: Vec<&Format> = formats.iter().collect();
 
     // Filter by extension
@@ -57,74 +60,77 @@ pub fn select_format<'a>(formats: &'a [Format], selector: &FormatSelector) -> Re
             candidates.sort_by(|a, b| a.bitrate.cmp(&b.bitrate));
             Ok(candidates.first().unwrap())
         }
-            QualitySelector::Itag(target_itag) => {
-                candidates.iter()
-                    .find(|f| f.itag == *target_itag)
-                    .copied()
-                    .ok_or(RytError::NoFormatFound)
-            }
-        QualitySelector::Height(target_height) => {
-            candidates.iter()
-                .filter(|f| f.height.unwrap_or(0) == *target_height)
-                .max_by_key(|f| f.bitrate)
-                .copied()
-                .ok_or(RytError::NoFormatFound)
-        }
-        QualitySelector::HeightLessOrEqual(target_height) => {
-            candidates.iter()
-                .filter(|f| f.height.unwrap_or(0) <= *target_height)
-                .max_by_key(|f| f.bitrate)
-                .copied()
-                .ok_or(RytError::NoFormatFound)
-        }
-        QualitySelector::HeightGreaterOrEqual(target_height) => {
-            candidates.iter()
-                .filter(|f| f.height.unwrap_or(0) >= *target_height)
-                .max_by_key(|f| f.bitrate)
-                .copied()
-                .ok_or(RytError::NoFormatFound)
-        }
+        QualitySelector::Itag(target_itag) => candidates
+            .iter()
+            .find(|f| f.itag == *target_itag)
+            .copied()
+            .ok_or(RytError::NoFormatFound),
+        QualitySelector::Height(target_height) => candidates
+            .iter()
+            .filter(|f| f.height.unwrap_or(0) == *target_height)
+            .max_by_key(|f| f.bitrate)
+            .copied()
+            .ok_or(RytError::NoFormatFound),
+        QualitySelector::HeightLessOrEqual(target_height) => candidates
+            .iter()
+            .filter(|f| f.height.unwrap_or(0) <= *target_height)
+            .max_by_key(|f| f.bitrate)
+            .copied()
+            .ok_or(RytError::NoFormatFound),
+        QualitySelector::HeightGreaterOrEqual(target_height) => candidates
+            .iter()
+            .filter(|f| f.height.unwrap_or(0) >= *target_height)
+            .max_by_key(|f| f.bitrate)
+            .copied()
+            .ok_or(RytError::NoFormatFound),
     }
 }
 
 /// Get the best progressive format (video+audio combined)
 pub fn get_best_progressive_format(formats: &[Format]) -> Option<&Format> {
-    formats.iter()
+    formats
+        .iter()
         .filter(|f| f.is_progressive())
         .max_by_key(|f| f.bitrate)
 }
 
 /// Get the best video-only format
 pub fn get_best_video_format(formats: &[Format]) -> Option<&Format> {
-    formats.iter()
+    formats
+        .iter()
         .filter(|f| f.is_video_only())
         .max_by_key(|f| f.bitrate)
 }
 
 /// Get the best audio-only format
 pub fn get_best_audio_format(formats: &[Format]) -> Option<&Format> {
-    formats.iter()
+    formats
+        .iter()
         .filter(|f| f.is_audio_only())
         .max_by_key(|f| f.bitrate)
 }
 
 /// Get formats by container type
 pub fn get_formats_by_container<'a>(formats: &'a [Format], container: &str) -> Vec<&'a Format> {
-    formats.iter()
+    formats
+        .iter()
         .filter(|f| f.container() == container)
         .collect()
 }
 
 /// Get formats by quality
 pub fn get_formats_by_quality<'a>(formats: &'a [Format], quality: &str) -> Vec<&'a Format> {
-    formats.iter()
-        .filter(|f| f.quality == quality)
-        .collect()
+    formats.iter().filter(|f| f.quality == quality).collect()
 }
 
 /// Get formats by height range
-pub fn get_formats_by_height_range(formats: &[Format], min_height: u32, max_height: u32) -> Vec<&Format> {
-    formats.iter()
+pub fn get_formats_by_height_range(
+    formats: &[Format],
+    min_height: u32,
+    max_height: u32,
+) -> Vec<&Format> {
+    formats
+        .iter()
         .filter(|f| {
             if let Some(height) = f.height {
                 height >= min_height && height <= max_height
@@ -136,8 +142,13 @@ pub fn get_formats_by_height_range(formats: &[Format], min_height: u32, max_heig
 }
 
 /// Get formats by bitrate range
-pub fn get_formats_by_bitrate_range(formats: &[Format], min_bitrate: u32, max_bitrate: u32) -> Vec<&Format> {
-    formats.iter()
+pub fn get_formats_by_bitrate_range(
+    formats: &[Format],
+    min_bitrate: u32,
+    max_bitrate: u32,
+) -> Vec<&Format> {
+    formats
+        .iter()
         .filter(|f| f.bitrate >= min_bitrate && f.bitrate <= max_bitrate)
         .collect()
 }
@@ -162,22 +173,27 @@ pub fn sort_formats_by_bitrate(formats: &mut [Format]) {
 
 /// Sort formats by size (largest first)
 pub fn sort_formats_by_size(formats: &mut [Format]) {
-    formats.sort_by(|a, b| {
-        match (a.size, b.size) {
-            (Some(a_s), Some(b_s)) => b_s.cmp(&a_s),
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => b.bitrate.cmp(&a.bitrate),
-        }
+    formats.sort_by(|a, b| match (a.size, b.size) {
+        (Some(a_s), Some(b_s)) => b_s.cmp(&a_s),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => b.bitrate.cmp(&a.bitrate),
     });
 }
 
 /// Filter formats by codec
 pub fn filter_formats_by_codec<'a>(formats: &'a [Format], codec: &str) -> Vec<&'a Format> {
-    formats.iter()
+    formats
+        .iter()
         .filter(|f| {
-            f.audio_codec.as_ref().map(|c| c.contains(codec)).unwrap_or(false) ||
-            f.video_codec.as_ref().map(|c| c.contains(codec)).unwrap_or(false)
+            f.audio_codec
+                .as_ref()
+                .map(|c| c.contains(codec))
+                .unwrap_or(false)
+                || f.video_codec
+                    .as_ref()
+                    .map(|c| c.contains(codec))
+                    .unwrap_or(false)
         })
         .collect()
 }
@@ -185,27 +201,27 @@ pub fn filter_formats_by_codec<'a>(formats: &'a [Format], codec: &str) -> Vec<&'
 /// Get format statistics
 pub fn get_format_stats(formats: &[Format]) -> FormatStats {
     let mut stats = FormatStats::default();
-    
+
     for format in formats {
         stats.total_formats += 1;
         stats.total_bitrate += format.bitrate;
-        
+
         if let Some(size) = format.size {
             stats.total_size += size;
         }
-        
+
         if format.is_progressive() {
             stats.progressive_formats += 1;
         }
-        
+
         if format.is_video_only() {
             stats.video_only_formats += 1;
         }
-        
+
         if format.is_audio_only() {
             stats.audio_only_formats += 1;
         }
-        
+
         if let Some(height) = format.height {
             if height > stats.max_height {
                 stats.max_height = height;
@@ -214,20 +230,20 @@ pub fn get_format_stats(formats: &[Format]) -> FormatStats {
                 stats.min_height = height;
             }
         }
-        
+
         if format.bitrate > stats.max_bitrate {
             stats.max_bitrate = format.bitrate;
         }
-        
+
         if stats.min_bitrate == 0 || format.bitrate < stats.min_bitrate {
             stats.min_bitrate = format.bitrate;
         }
     }
-    
+
     if stats.total_formats > 0 {
         stats.avg_bitrate = stats.total_bitrate / stats.total_formats as u32;
     }
-    
+
     stats
 }
 
@@ -252,7 +268,7 @@ impl FormatStats {
     pub fn total_size_string(&self) -> String {
         crate::core::progress::format_bytes(self.total_size)
     }
-    
+
     /// Get human-readable average bitrate
     pub fn avg_bitrate_string(&self) -> String {
         if self.avg_bitrate > 0 {
@@ -261,7 +277,7 @@ impl FormatStats {
             "Unknown".to_string()
         }
     }
-    
+
     /// Get human-readable max bitrate
     pub fn max_bitrate_string(&self) -> String {
         if self.max_bitrate > 0 {
@@ -270,7 +286,7 @@ impl FormatStats {
             "Unknown".to_string()
         }
     }
-    
+
     /// Get human-readable min bitrate
     pub fn min_bitrate_string(&self) -> String {
         if self.min_bitrate > 0 {
@@ -349,7 +365,7 @@ mod tests {
     fn test_select_format_best() {
         let formats = create_test_formats();
         let selector = FormatSelector::new(QualitySelector::Best);
-        
+
         let selected = select_format(&formats, &selector).unwrap();
         assert_eq!(selected.itag, 22); // Best progressive format
     }
@@ -358,7 +374,7 @@ mod tests {
     fn test_select_format_worst() {
         let formats = create_test_formats();
         let selector = FormatSelector::new(QualitySelector::Worst);
-        
+
         let selected = select_format(&formats, &selector).unwrap();
         assert_eq!(selected.itag, 18); // Worst progressive format
     }
@@ -367,7 +383,7 @@ mod tests {
     fn test_select_format_itag() {
         let formats = create_test_formats();
         let selector = FormatSelector::new(QualitySelector::Itag(137));
-        
+
         let selected = select_format(&formats, &selector).unwrap();
         assert_eq!(selected.itag, 137);
     }
@@ -375,9 +391,8 @@ mod tests {
     #[test]
     fn test_select_format_height_limit() {
         let formats = create_test_formats();
-        let selector = FormatSelector::new(QualitySelector::Best)
-            .with_height_limit(720);
-        
+        let selector = FormatSelector::new(QualitySelector::Best).with_height_limit(720);
+
         let selected = select_format(&formats, &selector).unwrap();
         assert!(selected.height.unwrap_or(0) <= 720);
     }
@@ -400,7 +415,7 @@ mod tests {
     fn test_get_format_stats() {
         let formats = create_test_formats();
         let stats = get_format_stats(&formats);
-        
+
         assert_eq!(stats.total_formats, 3);
         assert_eq!(stats.progressive_formats, 2);
         assert_eq!(stats.video_only_formats, 1);

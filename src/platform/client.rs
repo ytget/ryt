@@ -3,7 +3,7 @@
 use crate::error::RytError;
 use reqwest::{Client, ClientBuilder};
 use std::time::Duration;
-use tracing::{info, debug, warn, error};
+use tracing::{debug, error, info, warn};
 
 /// Client types for realistic header emulation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,12 +72,22 @@ impl ClientType {
 
     /// Check if this is a mobile client
     pub fn is_mobile(&self) -> bool {
-        matches!(self, ClientType::Android | ClientType::Ios | ClientType::SamsungBrowser)
+        matches!(
+            self,
+            ClientType::Android | ClientType::Ios | ClientType::SamsungBrowser
+        )
     }
 
     /// Check if this is a web client
     pub fn is_web(&self) -> bool {
-        matches!(self, ClientType::Chrome | ClientType::Firefox | ClientType::Safari | ClientType::Edge | ClientType::Opera)
+        matches!(
+            self,
+            ClientType::Chrome
+                | ClientType::Firefox
+                | ClientType::Safari
+                | ClientType::Edge
+                | ClientType::Opera
+        )
     }
 
     /// Check if this is a TV client
@@ -138,7 +148,7 @@ impl Default for HttpClientConfig {
             client_type: ClientType::Chrome,
             enable_client_switching: true,
             switching_strategy: ClientSwitchingStrategy::default(),
-            http1_only: false,  // HTTP/2 by default
+            http1_only: false, // HTTP/2 by default
         }
     }
 }
@@ -174,7 +184,8 @@ impl VideoClient {
             builder = builder.user_agent(user_agent);
         } else {
             // Default Android user agent
-            builder = builder.user_agent("com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip");
+            builder = builder
+                .user_agent("com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip");
         }
 
         // Set proxy
@@ -186,8 +197,8 @@ impl VideoClient {
 
         let client = builder.build().expect("Failed to build HTTP client");
 
-        Self { 
-            client, 
+        Self {
+            client,
             config,
             current_client_index: 0,
             client_switch_count: 0,
@@ -204,35 +215,41 @@ impl VideoClient {
         self.config.client_type
     }
 
-            /// Switch to next client type
-            pub fn switch_client(&mut self) -> ClientType {
-                if !self.config.enable_client_switching {
-                    return self.config.client_type;
-                }
+    /// Switch to next client type
+    pub fn switch_client(&mut self) -> ClientType {
+        if !self.config.enable_client_switching {
+            return self.config.client_type;
+        }
 
-                let available_clients = ClientType::all();
-                self.current_client_index = (self.current_client_index + 1) % available_clients.len();
-                self.client_switch_count += 1;
-                
-                let new_client_type = available_clients[self.current_client_index];
-                self.config.client_type = new_client_type;
-                
-                info!("Switched to client type: {:?} (switch #{}", new_client_type, self.client_switch_count);
-                new_client_type
-            }
+        let available_clients = ClientType::all();
+        self.current_client_index = (self.current_client_index + 1) % available_clients.len();
+        self.client_switch_count += 1;
+
+        let new_client_type = available_clients[self.current_client_index];
+        self.config.client_type = new_client_type;
+
+        info!(
+            "Switched to client type: {:?} (switch #{}",
+            new_client_type, self.client_switch_count
+        );
+        new_client_type
+    }
 
     /// Switch to specific client type
     pub fn switch_to_client(&mut self, client_type: ClientType) {
         self.config.client_type = client_type;
         self.client_switch_count += 1;
-        
+
         // Update index
         let available_clients = ClientType::all();
         if let Some(index) = available_clients.iter().position(|&c| c == client_type) {
             self.current_client_index = index;
         }
-        
-        info!("Switched to specific client type: {:?} (switch #{})", client_type, self.client_switch_count);
+
+        info!(
+            "Switched to specific client type: {:?} (switch #{})",
+            client_type, self.client_switch_count
+        );
     }
 
     /// Switch client based on strategy
@@ -358,12 +375,20 @@ impl VideoClient {
     }
 
     /// Create a request with realistic browser headers using current client type
-    pub fn create_realistic_request(&self, method: reqwest::Method, url: &str) -> reqwest::RequestBuilder {
+    pub fn create_realistic_request(
+        &self,
+        method: reqwest::Method,
+        url: &str,
+    ) -> reqwest::RequestBuilder {
         self.create_realistic_request_with_client(method, url, self.config.client_type)
     }
-    
+
     /// Create a simple request for media downloads (googlevideo.com) without browser-specific headers
-    pub fn create_simple_media_request(&self, method: reqwest::Method, url: &str) -> reqwest::RequestBuilder {
+    pub fn create_simple_media_request(
+        &self,
+        method: reqwest::Method,
+        url: &str,
+    ) -> reqwest::RequestBuilder {
         // Use minimal headers for media downloads to avoid 403 errors
         // Match Go ytdlp exactly: User-Agent, Accept, Accept-Encoding, Connection, Cache-Control
         self.client
@@ -376,7 +401,12 @@ impl VideoClient {
     }
 
     /// Create a request with realistic browser headers for specific client type
-    pub fn create_realistic_request_with_client(&self, method: reqwest::Method, url: &str, client_type: ClientType) -> reqwest::RequestBuilder {
+    pub fn create_realistic_request_with_client(
+        &self,
+        method: reqwest::Method,
+        url: &str,
+        client_type: ClientType,
+    ) -> reqwest::RequestBuilder {
         let (user_agent, headers) = match client_type {
             ClientType::Chrome => (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -480,27 +510,34 @@ impl VideoClient {
     pub fn create_innertube_request(&self, url: &str) -> reqwest::RequestBuilder {
         // Add INNERTUBE_API_KEY to URL based on client type
         let (api_key, client_name, client_version) = match self.config.client_type {
-            ClientType::Chrome | ClientType::Firefox | ClientType::Safari | ClientType::Edge | ClientType::Opera => {
-                ("AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8", "1", "2.20251002.00.00")
-            }
+            ClientType::Chrome
+            | ClientType::Firefox
+            | ClientType::Safari
+            | ClientType::Edge
+            | ClientType::Opera => (
+                "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+                "1",
+                "2.20251002.00.00",
+            ),
             ClientType::Android | ClientType::SamsungBrowser | ClientType::AndroidTV => {
                 ("AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w", "3", "20.10.38")
             }
-            ClientType::Ios => {
-                ("AIzaSyBUPetSUmoZL-OhlxA7wSac5XinrygCqMo", "5", "20.10.38")
-            }
-            ClientType::SmartTV => {
-                ("AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8", "1", "2.20251002.00.00")
-            }
+            ClientType::Ios => ("AIzaSyBUPetSUmoZL-OhlxA7wSac5XinrygCqMo", "5", "20.10.38"),
+            ClientType::SmartTV => (
+                "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+                "1",
+                "2.20251002.00.00",
+            ),
         };
-        
+
         let url_with_key = if url.contains('?') {
             format!("{}&key={}", url, api_key)
         } else {
             format!("{}?key={}", url, api_key)
         };
-        
-        let mut request = self.create_request(reqwest::Method::POST, &url_with_key)
+
+        let mut request = self
+            .create_request(reqwest::Method::POST, &url_with_key)
             .header("Content-Type", "application/json")
             .header("X-YouTube-Client-Name", client_name)
             .header("X-YouTube-Client-Version", client_version);
@@ -607,72 +644,81 @@ impl VideoClient {
         request
     }
 
-            /// Execute request with retry logic and client switching
-            pub async fn execute_with_retry<T>(&mut self, request: reqwest::RequestBuilder) -> Result<T, RytError>
-            where
-                T: serde::de::DeserializeOwned,
-            {
-                let mut last_error = None;
-                
-                for attempt in 0..self.config.max_retries {
-                    debug!("HTTP request attempt {}/{}", attempt + 1, self.config.max_retries);
-                    
-                    match request.try_clone().unwrap().send().await {
-                        Ok(response) => {
-                            if response.status().is_success() {
-                                debug!("HTTP request successful");
-                                return Ok(response.json().await?);
-                            } else if response.status() == 403 {
-                                // Check if this is a botguard challenge
-                                let response_text = response.text().await.unwrap_or_default();
-                                if response_text.contains("botguard") || response_text.contains("challenge") {
-                                    warn!("Botguard challenge detected");
-                                    let error = RytError::BotguardError("Botguard challenge detected".to_string());
-                                    // Try switching client if enabled
-                                    if self.config.enable_client_switching {
-                                        self.switch_client_by_strategy(Some(&error));
-                                    }
-                                    return Err(error);
-                                }
-                                warn!("Rate limited (403), switching client");
-                                let error = RytError::RateLimited;
-                                // Try switching client if enabled
-                                if self.config.enable_client_switching {
-                                    self.switch_client_by_strategy(Some(&error));
-                                }
-                                return Err(error);
-                            } else if response.status() == 404 {
-                                warn!("Video unavailable (404), switching client");
-                                let error = RytError::VideoUnavailable;
-                                // Try switching client if enabled
-                                if self.config.enable_client_switching {
-                                    self.switch_client_by_strategy(Some(&error));
-                                }
-                                return Err(error);
-                            } else {
-                                warn!("HTTP request failed with status: {}", response.status());
-                                last_error = Some(RytError::DownloadFailed(
-                                    reqwest::Error::from(response.error_for_status().unwrap_err())
-                                ));
-                            }
-                        }
-                        Err(e) => {
-                            warn!("HTTP request error: {}", e);
-                            last_error = Some(RytError::DownloadFailed(e));
-                        }
-                    }
+    /// Execute request with retry logic and client switching
+    pub async fn execute_with_retry<T>(
+        &mut self,
+        request: reqwest::RequestBuilder,
+    ) -> Result<T, RytError>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let mut last_error = None;
 
-                    // Exponential backoff
-                    if attempt < self.config.max_retries - 1 {
-                        let delay = Duration::from_millis(200 * (1 << attempt));
-                        debug!("Retrying in {:?}", delay);
-                        tokio::time::sleep(delay).await;
+        for attempt in 0..self.config.max_retries {
+            debug!(
+                "HTTP request attempt {}/{}",
+                attempt + 1,
+                self.config.max_retries
+            );
+
+            match request.try_clone().unwrap().send().await {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        debug!("HTTP request successful");
+                        return Ok(response.json().await?);
+                    } else if response.status() == 403 {
+                        // Check if this is a botguard challenge
+                        let response_text = response.text().await.unwrap_or_default();
+                        if response_text.contains("botguard") || response_text.contains("challenge")
+                        {
+                            warn!("Botguard challenge detected");
+                            let error =
+                                RytError::BotguardError("Botguard challenge detected".to_string());
+                            // Try switching client if enabled
+                            if self.config.enable_client_switching {
+                                self.switch_client_by_strategy(Some(&error));
+                            }
+                            return Err(error);
+                        }
+                        warn!("Rate limited (403), switching client");
+                        let error = RytError::RateLimited;
+                        // Try switching client if enabled
+                        if self.config.enable_client_switching {
+                            self.switch_client_by_strategy(Some(&error));
+                        }
+                        return Err(error);
+                    } else if response.status() == 404 {
+                        warn!("Video unavailable (404), switching client");
+                        let error = RytError::VideoUnavailable;
+                        // Try switching client if enabled
+                        if self.config.enable_client_switching {
+                            self.switch_client_by_strategy(Some(&error));
+                        }
+                        return Err(error);
+                    } else {
+                        warn!("HTTP request failed with status: {}", response.status());
+                        last_error = Some(RytError::DownloadFailed(reqwest::Error::from(
+                            response.error_for_status().unwrap_err(),
+                        )));
                     }
                 }
-
-                error!("All retry attempts failed");
-                Err(last_error.unwrap_or(RytError::Generic("Request failed".to_string())))
+                Err(e) => {
+                    warn!("HTTP request error: {}", e);
+                    last_error = Some(RytError::DownloadFailed(e));
+                }
             }
+
+            // Exponential backoff
+            if attempt < self.config.max_retries - 1 {
+                let delay = Duration::from_millis(200 * (1 << attempt));
+                debug!("Retrying in {:?}", delay);
+                tokio::time::sleep(delay).await;
+            }
+        }
+
+        error!("All retry attempts failed");
+        Err(last_error.unwrap_or(RytError::Generic("Request failed".to_string())))
+    }
 }
 
 impl Default for VideoClient {

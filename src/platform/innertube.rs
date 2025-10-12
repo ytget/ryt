@@ -1,11 +1,11 @@
 //! InnerTube API client for video platform
 
+use crate::core::video_info::{Format, PlaylistItem};
 use crate::error::RytError;
 use crate::platform::client::VideoClient;
-use crate::core::video_info::{Format, PlaylistItem};
-use serde::Deserialize;
-use tracing::{info, debug, warn};
 use regex::Regex;
+use serde::Deserialize;
+use tracing::{debug, info, warn};
 
 /// InnerTube API client
 pub struct InnerTubeClient {
@@ -21,7 +21,7 @@ impl InnerTubeClient {
     pub fn new() -> Self {
         Self {
             http_client: VideoClient::new(),
-            client_name: "ANDROID".to_string(),  // ANDROID gives direct URLs
+            client_name: "ANDROID".to_string(), // ANDROID gives direct URLs
             client_version: "20.10.38".to_string(),
             api_key: None,
             visitor_id: None,
@@ -40,7 +40,7 @@ impl InnerTubeClient {
         self.visitor_id = Some(visitor_id.to_string());
         self
     }
-    
+
     /// Switch client for error handling
     pub fn switch_client_for_error(&mut self, error: &RytError) {
         self.http_client.switch_client_by_strategy(Some(error));
@@ -72,7 +72,8 @@ impl InnerTubeClient {
 
             debug!("Trying to extract API key from: {}", source);
 
-            let response = self.http_client
+            let response = self
+                .http_client
                 .create_realistic_request(reqwest::Method::GET, &source)
                 .send()
                 .await?;
@@ -111,12 +112,15 @@ impl InnerTubeClient {
     }
 
     /// Get player response for a video
-    pub async fn get_player_response(&mut self, video_id: &str) -> Result<PlayerResponse, RytError> {
+    pub async fn get_player_response(
+        &mut self,
+        video_id: &str,
+    ) -> Result<PlayerResponse, RytError> {
         info!("Fetching player response for video ID: {}", video_id);
-        
+
         // Ensure we have an API key
         self.ensure_api_key(video_id).await?;
-        
+
         // Build client context based on client type
         let client_context = if self.client_name == "ANDROID" {
             serde_json::json!({
@@ -149,11 +153,14 @@ impl InnerTubeClient {
 
         let api_key = self.api_key.as_ref().unwrap();
         let url = format!("https://www.youtube.com/youtubei/v1/player?key={}", api_key);
-        
+
         debug!("Using API key: {}...", &api_key[..10]);
         debug!("Request URL: {}", url);
-        debug!("Request body: {}", serde_json::to_string_pretty(&request_body).unwrap_or_default());
-        
+        debug!(
+            "Request body: {}",
+            serde_json::to_string_pretty(&request_body).unwrap_or_default()
+        );
+
         let mut request = self.http_client.create_innertube_request(&url);
 
         // Add Android-specific headers
@@ -161,55 +168,61 @@ impl InnerTubeClient {
             request = request
                 .header("X-YouTube-Client-Name", "3")
                 .header("X-YouTube-Client-Version", "20.10.38")
-                .header("User-Agent", "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip");
+                .header(
+                    "User-Agent",
+                    "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip",
+                );
         }
 
         if let Some(visitor_id) = &self.visitor_id {
             request = request.header("x-goog-visitor-id", visitor_id);
         }
 
-        let response: PlayerResponse = self.http_client.execute_with_retry(
-            request.json(&request_body)
-        ).await?;
+        let response: PlayerResponse = self
+            .http_client
+            .execute_with_retry(request.json(&request_body))
+            .await?;
 
         debug!("Player response received successfully");
-        
+
         // Check playability status
         if let Some(playability_status) = &response.playability_status {
             match playability_status.status.as_str() {
-            "ERROR" => {
-                if let Some(reason) = &playability_status.reason {
-                    warn!("Video playability error: {}", reason);
-                    let reason_lower = reason.to_lowercase();
-                    if reason_lower.contains("geograph") || reason_lower.contains("available in your country") {
-                        return Err(RytError::GeoBlocked);
+                "ERROR" => {
+                    if let Some(reason) = &playability_status.reason {
+                        warn!("Video playability error: {}", reason);
+                        let reason_lower = reason.to_lowercase();
+                        if reason_lower.contains("geograph")
+                            || reason_lower.contains("available in your country")
+                        {
+                            return Err(RytError::GeoBlocked);
+                        }
+                        if reason_lower.contains("rate limit") || reason_lower.contains("quota") {
+                            return Err(RytError::RateLimited);
+                        }
+                        Err(RytError::VideoUnavailable)
+                    } else {
+                        warn!("Video playability error: unknown reason");
+                        Err(RytError::VideoUnavailable)
                     }
-                    if reason_lower.contains("rate limit") || reason_lower.contains("quota") {
-                        return Err(RytError::RateLimited);
-                    }
-                    Err(RytError::VideoUnavailable)
-                } else {
-                    warn!("Video playability error: unknown reason");
-                    Err(RytError::VideoUnavailable)
                 }
-            }
-            "LOGIN_REQUIRED" => {
-                warn!("Age restriction detected, this may require client switching");
-                Err(RytError::AgeRestricted)
-            },
-            "UNPLAYABLE" => {
-                if let Some(reason) = &playability_status.reason {
-                    let reason_lower = reason.to_lowercase();
-                    if reason_lower.contains("private") {
-                        Err(RytError::Private)
+                "LOGIN_REQUIRED" => {
+                    warn!("Age restriction detected, this may require client switching");
+                    Err(RytError::AgeRestricted)
+                }
+                "UNPLAYABLE" => {
+                    if let Some(reason) = &playability_status.reason {
+                        let reason_lower = reason.to_lowercase();
+                        if reason_lower.contains("private") {
+                            Err(RytError::Private)
+                        } else {
+                            Err(RytError::VideoUnavailable)
+                        }
                     } else {
                         Err(RytError::VideoUnavailable)
                     }
-                } else {
-                    Err(RytError::VideoUnavailable)
                 }
-            }
-            _ => Ok(response),
+                _ => Ok(response),
             }
         } else {
             // No playability status, assume OK
@@ -218,7 +231,11 @@ impl InnerTubeClient {
     }
 
     /// Get playlist items
-    pub async fn get_playlist_items(&mut self, playlist_id: &str, limit: Option<usize>) -> Result<Vec<PlaylistItem>, RytError> {
+    pub async fn get_playlist_items(
+        &mut self,
+        playlist_id: &str,
+        limit: Option<usize>,
+    ) -> Result<Vec<PlaylistItem>, RytError> {
         let request_body = serde_json::json!({
             "context": {
                 "client": {
@@ -237,30 +254,52 @@ impl InnerTubeClient {
             "params": "6gPTAUNwc0RRUXh4Zz09"
         });
 
-        let mut request = self.http_client.create_innertube_request(
-            "https://www.youtube.com/youtubei/v1/browse"
-        );
+        let mut request = self
+            .http_client
+            .create_innertube_request("https://www.youtube.com/youtubei/v1/browse");
 
         if let Some(visitor_id) = &self.visitor_id {
             request = request.header("x-goog-visitor-id", visitor_id);
         }
 
-        let response: BrowseResponse = self.http_client.execute_with_retry(
-            request.json(&request_body)
-        ).await?;
+        let response: BrowseResponse = self
+            .http_client
+            .execute_with_retry(request.json(&request_body))
+            .await?;
 
         // Parse playlist items from response
         let mut items = Vec::new();
-        if let Some(contents) = response.contents.two_column_browse_results_renderer.tabs.first() {
-            if let Some(playlist) = &contents.tab_renderer.content.section_list_renderer.contents.first() {
+        if let Some(contents) = response
+            .contents
+            .two_column_browse_results_renderer
+            .tabs
+            .first()
+        {
+            if let Some(playlist) = &contents
+                .tab_renderer
+                .content
+                .section_list_renderer
+                .contents
+                .first()
+            {
                 if let Some(items_renderer) = &playlist.item_section_renderer.contents.first() {
                     let playlist_video_list = &items_renderer.playlist_video_list_renderer;
                     for (index, content) in playlist_video_list.contents.iter().enumerate() {
                         let video = &content.playlist_video_renderer;
                         items.push(PlaylistItem {
                             video_id: video.video_id.clone(),
-                            title: video.title.runs.first().map(|r| r.text.clone()).unwrap_or_default(),
-                            author: video.short_byline_text.runs.first().map(|r| r.text.clone()).unwrap_or_default(),
+                            title: video
+                                .title
+                                .runs
+                                .first()
+                                .map(|r| r.text.clone())
+                                .unwrap_or_default(),
+                            author: video
+                                .short_byline_text
+                                .runs
+                                .first()
+                                .map(|r| r.text.clone())
+                                .unwrap_or_default(),
                             duration: video.length_seconds.parse().unwrap_or(0),
                             index: index as u32,
                             thumbnail: video.thumbnail.thumbnails.first().map(|t| t.url.clone()),
@@ -282,26 +321,31 @@ impl InnerTubeClient {
 
     /// Get visitor ID from YouTube main page
     pub async fn get_visitor_id(&self) -> Result<String, RytError> {
-        let response = self.http_client.create_request(
-            reqwest::Method::GET,
-            "https://www.youtube.com"
-        ).send().await?;
+        let response = self
+            .http_client
+            .create_request(reqwest::Method::GET, "https://www.youtube.com")
+            .send()
+            .await?;
 
         let html = response.text().await?;
-        
+
         // Extract visitor ID from ytcfg
         if let Some(start) = html.find("ytcfg.set(") {
             if let Some(end) = html[start..].find("});") {
                 let config_str = &html[start + 10..start + end + 1];
                 if let Ok(config) = serde_json::from_str::<serde_json::Value>(config_str) {
-                    if let Some(visitor_data) = config["INNERTUBE_CONTEXT"]["client"]["visitorData"].as_str() {
+                    if let Some(visitor_data) =
+                        config["INNERTUBE_CONTEXT"]["client"]["visitorData"].as_str()
+                    {
                         return Ok(visitor_data.to_string());
                     }
                 }
             }
         }
 
-        Err(RytError::Generic("Failed to extract visitor ID".to_string()))
+        Err(RytError::Generic(
+            "Failed to extract visitor ID".to_string(),
+        ))
     }
 }
 
@@ -417,51 +461,73 @@ impl PlayerResponse {
         // Parse progressive formats
         if let Some(streaming_data) = &self.streaming_data {
             if let Some(formats_data) = &streaming_data.formats {
-            for format_data in formats_data {
-                formats.push(Format {
-                    itag: format_data.itag,
-                    url: format_data.url.clone().unwrap_or_default(),
-                    quality: format_data.quality_label.clone().unwrap_or_default(),
-                    mime_type: format_data.mime_type.clone(),
-                    bitrate: format_data.bitrate.unwrap_or(0),
-                    size: format_data.content_length.as_ref().and_then(|s| s.parse().ok()),
-                    signature_cipher: format_data.signature_cipher.clone(),
-                    audio_codec: format_data.audio_codec.clone(),
-                    video_codec: format_data.video_codec.clone(),
-                    fps: format_data.fps,
-                    width: format_data.width,
-                    height: format_data.height,
-                    audio_sample_rate: format_data.audio_sample_rate.as_ref().and_then(|v| v.as_str().and_then(|s| s.parse().ok()).or_else(|| v.as_u64().map(|n| n as u32))),
-                    audio_channels: format_data.audio_channels.as_ref().and_then(|v| v.as_str().and_then(|s| s.parse().ok()).or_else(|| v.as_u64().map(|n| n as u32))),
-                    language: None,
-                    note: None,
-                });
+                for format_data in formats_data {
+                    formats.push(Format {
+                        itag: format_data.itag,
+                        url: format_data.url.clone().unwrap_or_default(),
+                        quality: format_data.quality_label.clone().unwrap_or_default(),
+                        mime_type: format_data.mime_type.clone(),
+                        bitrate: format_data.bitrate.unwrap_or(0),
+                        size: format_data
+                            .content_length
+                            .as_ref()
+                            .and_then(|s| s.parse().ok()),
+                        signature_cipher: format_data.signature_cipher.clone(),
+                        audio_codec: format_data.audio_codec.clone(),
+                        video_codec: format_data.video_codec.clone(),
+                        fps: format_data.fps,
+                        width: format_data.width,
+                        height: format_data.height,
+                        audio_sample_rate: format_data.audio_sample_rate.as_ref().and_then(|v| {
+                            v.as_str()
+                                .and_then(|s| s.parse().ok())
+                                .or_else(|| v.as_u64().map(|n| n as u32))
+                        }),
+                        audio_channels: format_data.audio_channels.as_ref().and_then(|v| {
+                            v.as_str()
+                                .and_then(|s| s.parse().ok())
+                                .or_else(|| v.as_u64().map(|n| n as u32))
+                        }),
+                        language: None,
+                        note: None,
+                    });
+                }
             }
-        }
 
-        // Parse adaptive formats
+            // Parse adaptive formats
             if let Some(adaptive_formats) = &streaming_data.adaptive_formats {
-            for format_data in adaptive_formats {
-                formats.push(Format {
-                    itag: format_data.itag,
-                    url: format_data.url.clone().unwrap_or_default(),
-                    quality: format_data.quality_label.clone().unwrap_or_default(),
-                    mime_type: format_data.mime_type.clone(),
-                    bitrate: format_data.bitrate.unwrap_or(0),
-                    size: format_data.content_length.as_ref().and_then(|s| s.parse().ok()),
-                    signature_cipher: format_data.signature_cipher.clone(),
-                    audio_codec: format_data.audio_codec.clone(),
-                    video_codec: format_data.video_codec.clone(),
-                    fps: format_data.fps,
-                    width: format_data.width,
-                    height: format_data.height,
-                    audio_sample_rate: format_data.audio_sample_rate.as_ref().and_then(|v| v.as_str().and_then(|s| s.parse().ok()).or_else(|| v.as_u64().map(|n| n as u32))),
-                    audio_channels: format_data.audio_channels.as_ref().and_then(|v| v.as_str().and_then(|s| s.parse().ok()).or_else(|| v.as_u64().map(|n| n as u32))),
-                    language: None,
-                    note: None,
-                });
+                for format_data in adaptive_formats {
+                    formats.push(Format {
+                        itag: format_data.itag,
+                        url: format_data.url.clone().unwrap_or_default(),
+                        quality: format_data.quality_label.clone().unwrap_or_default(),
+                        mime_type: format_data.mime_type.clone(),
+                        bitrate: format_data.bitrate.unwrap_or(0),
+                        size: format_data
+                            .content_length
+                            .as_ref()
+                            .and_then(|s| s.parse().ok()),
+                        signature_cipher: format_data.signature_cipher.clone(),
+                        audio_codec: format_data.audio_codec.clone(),
+                        video_codec: format_data.video_codec.clone(),
+                        fps: format_data.fps,
+                        width: format_data.width,
+                        height: format_data.height,
+                        audio_sample_rate: format_data.audio_sample_rate.as_ref().and_then(|v| {
+                            v.as_str()
+                                .and_then(|s| s.parse().ok())
+                                .or_else(|| v.as_u64().map(|n| n as u32))
+                        }),
+                        audio_channels: format_data.audio_channels.as_ref().and_then(|v| {
+                            v.as_str()
+                                .and_then(|s| s.parse().ok())
+                                .or_else(|| v.as_u64().map(|n| n as u32))
+                        }),
+                        language: None,
+                        note: None,
+                    });
+                }
             }
-        }
         }
 
         // If no formats found, return error
@@ -571,18 +637,16 @@ mod tests {
 
     #[test]
     fn test_innertube_client_with_client() {
-        let client = InnerTubeClient::new()
-            .with_client("WEB", "2.20250312.04.00");
-        
+        let client = InnerTubeClient::new().with_client("WEB", "2.20250312.04.00");
+
         assert_eq!(client.client_name, "WEB");
         assert_eq!(client.client_version, "2.20250312.04.00");
     }
 
     #[test]
     fn test_innertube_client_with_visitor_id() {
-        let client = InnerTubeClient::new()
-            .with_visitor_id("test_visitor_id");
-        
+        let client = InnerTubeClient::new().with_visitor_id("test_visitor_id");
+
         assert_eq!(client.visitor_id, Some("test_visitor_id".to_string()));
     }
 }

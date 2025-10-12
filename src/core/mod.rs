@@ -7,4 +7,3 @@ pub mod video_info;
 pub use downloader::*;
 pub use progress::*;
 pub use video_info::*;
-

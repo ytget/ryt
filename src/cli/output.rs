@@ -1,7 +1,7 @@
 //! Output formatting and progress display
 
-use crate::core::progress::Progress;
 use crate::cli::args::VerbosityLevel;
+use crate::core::progress::Progress;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::sync::Arc;
 use std::time::Duration;
@@ -45,7 +45,7 @@ impl OutputFormatter {
         if let Some(progress_bar) = &self.progress_bar {
             progress_bar.set_position(progress.downloaded_size);
             progress_bar.set_length(progress.total_size);
-            
+
             if let Some(speed) = progress.speed {
                 progress_bar.set_message(format!("{}/s", format_bytes(speed as u64)));
             }
@@ -100,20 +100,38 @@ impl OutputFormatter {
 
         println!("📹 {}", title);
         println!("👤 {}", author);
-        println!("⏱️  {}", format_duration(Duration::from_secs(duration as u64)));
+        println!(
+            "⏱️  {}",
+            format_duration(Duration::from_secs(duration as u64))
+        );
         println!("📊 {} formats available", formats);
         println!();
     }
 
     /// Print format information
-    pub fn print_format_info(&self, itag: u32, quality: &str, mime_type: &str, bitrate: u32, size: Option<u64>) {
+    pub fn print_format_info(
+        &self,
+        itag: u32,
+        quality: &str,
+        mime_type: &str,
+        bitrate: u32,
+        size: Option<u64>,
+    ) {
         if self.verbosity == VerbosityLevel::Quiet {
             return;
         }
 
-        let size_str = size.map(|s| format!(" ({})", format_bytes(s))).unwrap_or_default();
-        println!("  📋 itag={} | {} | {} | {} kbps{}", 
-                 itag, quality, mime_type, bitrate / 1000, size_str);
+        let size_str = size
+            .map(|s| format!(" ({})", format_bytes(s)))
+            .unwrap_or_default();
+        println!(
+            "  📋 itag={} | {} | {} | {} kbps{}",
+            itag,
+            quality,
+            mime_type,
+            bitrate / 1000,
+            size_str
+        );
     }
 
     /// Print download start message
@@ -187,7 +205,9 @@ impl OutputFormatter {
 }
 
 /// Create a progress callback for the downloader
-pub fn create_progress_callback(formatter: Arc<OutputFormatter>) -> impl Fn(Progress) + Send + Sync + 'static {
+pub fn create_progress_callback(
+    formatter: Arc<OutputFormatter>,
+) -> impl Fn(Progress) + Send + Sync + 'static {
     move |progress: Progress| {
         formatter.update_progress(&progress);
     }
@@ -205,9 +225,9 @@ fn format_bytes(bytes: u64) -> String {
     let bytes_f64 = bytes as f64;
     let exp = (bytes_f64.ln() / THRESHOLD.ln()).floor() as usize;
     let exp = exp.min(UNITS.len() - 1);
-    
+
     let value = bytes_f64 / THRESHOLD.powi(exp as i32);
-    
+
     if exp == 0 {
         format!("{} {}", bytes, UNITS[exp])
     } else {
@@ -218,7 +238,7 @@ fn format_bytes(bytes: u64) -> String {
 /// Format duration as human-readable string
 fn format_duration(duration: Duration) -> String {
     let total_seconds = duration.as_secs();
-    
+
     if total_seconds < 60 {
         format!("{}s", total_seconds)
     } else if total_seconds < 3600 {
@@ -278,7 +298,7 @@ mod tests {
         formatter.success("test");
         formatter.warning("test");
         formatter.debug("test");
-        
+
         // Error should always print
         formatter.error("test");
     }
