@@ -1,5 +1,9 @@
 # RYT - Rust Video Downloader
 
+<div align="center">
+  <img src="imgs/logos/ryt-logo-v2.png" alt="RYT Logo" width="200">
+</div>
+
 [![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Build Status](https://github.com/ytget/ryt/workflows/CI/badge.svg)](https://github.com/ytget/ryt/actions)
