@@ -1,0 +1,94 @@
+# Rust
+/target/
+/Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Build artifacts
+debug/
+release/
+*.o
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Test artifacts
+*.profraw
+*.profdata
+
+# IDE - JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# IDE - Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix
+
+# Operating Systems
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+## Linux
+*~
+.directory
+.Trash-*
+
+## Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Docker
+docker-compose.override.yaml
+./deployments/docker-compose.override.yaml
+./deploy/docker-compose.override.yaml
+
+# Documentation temporary files
+*.md.backup
+
+# Video/Media test files (if needed for testing, add them explicitly)
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Project specific
+changelog*
+plan*
