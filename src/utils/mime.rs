@@ -16,7 +16,7 @@ pub fn ext_from_mime(mime_type: &str) -> &'static str {
         "video/mpeg" => "mpeg",
         "video/ogg" => "ogv",
         "video/x-matroska" => "mkv",
-        
+
         // Audio formats
         "audio/mp4" => "m4a",
         "audio/webm" => "webm",
@@ -29,7 +29,7 @@ pub fn ext_from_mime(mime_type: &str) -> &'static str {
         "audio/x-aac" => "aac",
         "audio/vorbis" => "ogg",
         "audio/opus" => "opus",
-        
+
         // Default fallback
         _ => "bin",
     }
@@ -51,7 +51,7 @@ pub fn mime_from_ext(extension: &str) -> &'static str {
         "mpeg" | "mpg" => "video/mpeg",
         "ogv" => "video/ogg",
         "mkv" => "video/x-matroska",
-        
+
         // Audio formats
         "m4a" => "audio/mp4",
         "mp3" => "audio/mpeg",
@@ -60,7 +60,7 @@ pub fn mime_from_ext(extension: &str) -> &'static str {
         "flac" => "audio/flac",
         "aac" => "audio/aac",
         "opus" => "audio/opus",
-        
+
         // Default fallback
         _ => "application/octet-stream",
     }
@@ -168,4 +168,3 @@ mod tests {
         assert_eq!(get_container_format("unknown/type"), "unknown");
     }
 }
-

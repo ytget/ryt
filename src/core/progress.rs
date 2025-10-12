@@ -45,7 +45,7 @@ impl Progress {
         let elapsed = self.start_time.elapsed();
         if elapsed.as_millis() > 0 {
             self.speed = Some(downloaded_size as f64 / elapsed.as_secs_f64());
-            
+
             if let Some(speed) = self.speed {
                 if speed > 0.0 && self.total_size > downloaded_size {
                     let remaining_bytes = self.total_size - downloaded_size;
@@ -101,9 +101,9 @@ pub fn format_bytes(bytes: u64) -> String {
     let bytes_f64 = bytes as f64;
     let exp = (bytes_f64.ln() / THRESHOLD.ln()).floor() as usize;
     let exp = exp.min(UNITS.len() - 1);
-    
+
     let value = bytes_f64 / THRESHOLD.powi(exp as i32);
-    
+
     if exp == 0 {
         format!("{} {}", bytes, UNITS[exp])
     } else {
@@ -119,7 +119,7 @@ pub fn format_bytes_per_second(bytes_per_second: f64) -> String {
 /// Format duration as human-readable string
 pub fn format_duration(duration: Duration) -> String {
     let total_seconds = duration.as_secs();
-    
+
     if total_seconds < 60 {
         format!("{}s", total_seconds)
     } else if total_seconds < 3600 {
@@ -159,12 +159,12 @@ mod tests {
     #[test]
     fn test_progress_update() {
         let mut progress = Progress::new(1000);
-        
+
         progress.update(500);
         assert_eq!(progress.downloaded_size, 500);
         assert_eq!(progress.percent, 50.0);
         assert!(!progress.is_complete());
-        
+
         progress.update(1000);
         assert_eq!(progress.downloaded_size, 1000);
         assert_eq!(progress.percent, 100.0);
@@ -174,11 +174,11 @@ mod tests {
     #[test]
     fn test_progress_speed_calculation() {
         let mut progress = Progress::new(1000);
-        
+
         // Simulate some time passing
         thread::sleep(Duration::from_millis(100));
         progress.update(100);
-        
+
         // Speed should be calculated
         assert!(progress.speed.is_some());
         assert!(progress.speed.unwrap() > 0.0);

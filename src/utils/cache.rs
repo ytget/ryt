@@ -1,10 +1,10 @@
 //! Caching utilities for ryt
 
+use moka::future::Cache;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use moka::future::Cache;
-use serde::{Serialize, Deserialize};
 
 /// Simple in-memory cache with TTL
 #[derive(Clone)]
@@ -88,9 +88,7 @@ where
     K: std::hash::Hash + Eq + Clone + Send + Sync + 'static,
     V: Clone + Send + Sync + 'static,
 {
-    Cache::builder()
-        .time_to_live(ttl)
-        .build()
+    Cache::builder().time_to_live(ttl).build()
 }
 
 /// Create a new async cache with TTL and max capacity
@@ -108,27 +106,26 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
 
     #[test]
     fn test_memory_cache() {
         let cache = MemoryCache::new();
-        
+
         // Test insert and get
         cache.insert("key1", "value1", Duration::from_secs(1));
         assert_eq!(cache.get(&"key1"), Some("value1"));
-        
+
         // Test expiration
         thread::sleep(Duration::from_millis(1100));
         assert_eq!(cache.get(&"key1"), None);
-        
+
         // Test remove
         cache.insert("key2", "value2", Duration::from_secs(10));
         assert_eq!(cache.remove(&"key2"), Some("value2"));
         assert_eq!(cache.get(&"key2"), None);
-        
+
         // Test clear
         cache.insert("key3", "value3", Duration::from_secs(10));
         cache.clear();
@@ -138,13 +135,13 @@ mod tests {
     #[test]
     fn test_cleanup_expired() {
         let cache = MemoryCache::new();
-        
+
         cache.insert("key1", "value1", Duration::from_millis(100));
         cache.insert("key2", "value2", Duration::from_secs(10));
-        
+
         thread::sleep(Duration::from_millis(150));
         cache.cleanup_expired();
-        
+
         assert_eq!(cache.get(&"key1"), None);
         assert_eq!(cache.get(&"key2"), Some("value2"));
     }
@@ -152,10 +149,10 @@ mod tests {
     #[tokio::test]
     async fn test_async_cache() {
         let cache = new_async_cache(Duration::from_secs(1));
-        
+
         cache.insert("key1", "value1").await;
         assert_eq!(cache.get(&"key1").await, Some("value1"));
-        
+
         tokio::time::sleep(Duration::from_millis(1100)).await;
         assert_eq!(cache.get(&"key1").await, None);
     }
@@ -178,18 +175,26 @@ impl MultiLevelCache {
     /// Create a new multi-level cache
     pub fn new() -> Self {
         Self {
-            player_js_cache: Arc::new(Cache::builder()
-                .time_to_live(Duration::from_secs(600)) // 10 minutes
-                .build()),
-            signature_cache: Arc::new(Cache::builder()
-                .time_to_live(Duration::from_secs(3600)) // 1 hour
-                .build()),
-            visitor_id_cache: Arc::new(Cache::builder()
-                .time_to_live(Duration::from_secs(36000)) // 10 hours
-                .build()),
-            botguard_cache: Arc::new(Cache::builder()
-                .time_to_live(Duration::from_secs(1800)) // 30 minutes
-                .build()),
+            player_js_cache: Arc::new(
+                Cache::builder()
+                    .time_to_live(Duration::from_secs(600)) // 10 minutes
+                    .build(),
+            ),
+            signature_cache: Arc::new(
+                Cache::builder()
+                    .time_to_live(Duration::from_secs(3600)) // 1 hour
+                    .build(),
+            ),
+            visitor_id_cache: Arc::new(
+                Cache::builder()
+                    .time_to_live(Duration::from_secs(36000)) // 10 hours
+                    .build(),
+            ),
+            botguard_cache: Arc::new(
+                Cache::builder()
+                    .time_to_live(Duration::from_secs(1800)) // 30 minutes
+                    .build(),
+            ),
         }
     }
 
@@ -210,7 +215,9 @@ impl MultiLevelCache {
 
     /// Set signature
     pub async fn set_signature(&self, signature: &str, deciphered: String) {
-        self.signature_cache.insert(signature.to_string(), deciphered).await;
+        self.signature_cache
+            .insert(signature.to_string(), deciphered)
+            .await;
     }
 
     /// Get visitor ID
@@ -220,7 +227,9 @@ impl MultiLevelCache {
 
     /// Set visitor ID
     pub async fn set_visitor_id(&self, key: &str, visitor_id: String) {
-        self.visitor_id_cache.insert(key.to_string(), visitor_id).await;
+        self.visitor_id_cache
+            .insert(key.to_string(), visitor_id)
+            .await;
     }
 
     /// Get botguard token

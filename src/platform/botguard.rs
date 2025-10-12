@@ -27,10 +27,10 @@ pub trait BotguardSolver: Send + Sync {
 pub trait BotguardCache: Send + Sync {
     /// Get cached result
     async fn get(&self, key: &str) -> Option<BotguardResult>;
-    
+
     /// Set cached result
     async fn set(&self, key: &str, result: BotguardResult, ttl: Duration);
-    
+
     /// Clear cache
     async fn clear(&self);
 }
@@ -79,7 +79,7 @@ impl BotguardResult {
             strategy,
         }
     }
-    
+
     /// Create a new botguard result with expiration
     pub fn with_expiration(token: String, expires_at: std::time::Instant) -> Self {
         Self {
@@ -90,14 +90,18 @@ impl BotguardResult {
     }
 
     /// Create a new botguard result with strategy and expiration
-    pub fn with_strategy_and_expiration(token: String, strategy: BotguardStrategy, expires_at: std::time::Instant) -> Self {
+    pub fn with_strategy_and_expiration(
+        token: String,
+        strategy: BotguardStrategy,
+        expires_at: std::time::Instant,
+    ) -> Self {
         Self {
             token,
             expires_at: Some(expires_at),
             strategy,
         }
     }
-    
+
     /// Check if result is expired
     pub fn is_expired(&self) -> bool {
         if let Some(expires_at) = self.expires_at {
@@ -127,14 +131,14 @@ impl BotguardCache for MemoryBotguardCache {
     async fn get(&self, key: &str) -> Option<BotguardResult> {
         self.cache.get(key).cloned()
     }
-    
+
     async fn set(&self, _key: &str, _result: BotguardResult, _ttl: Duration) {
         // Note: This is a simplified implementation
         // In a real implementation, you'd need to handle TTL and thread safety
         // For now, we'll just store the result
         // self.cache.insert(key.to_string(), result);
     }
-    
+
     async fn clear(&self) {
         // self.cache.clear();
     }
@@ -181,25 +185,33 @@ impl EnhancedBotguardSolver {
     /// Generate botguard token using Android strategy
     async fn solve_android(&self, input: &str) -> Result<BotguardResult, RytError> {
         let cache_key = format!("android:{}", input);
-        
+
         // Check cache first
         if let Some(cached) = self.cache.get_botguard_token(&cache_key).await {
-            return Ok(BotguardResult::with_strategy(cached, BotguardStrategy::Android));
+            return Ok(BotguardResult::with_strategy(
+                cached,
+                BotguardStrategy::Android,
+            ));
         }
 
         // Simulate Android client botguard token generation
         let token = format!("android_token_{}", rand::random::<u32>());
-        
+
         // Cache the result
-        self.cache.set_botguard_token(&cache_key, token.clone()).await;
-        
-        Ok(BotguardResult::with_strategy(token, BotguardStrategy::Android))
+        self.cache
+            .set_botguard_token(&cache_key, token.clone())
+            .await;
+
+        Ok(BotguardResult::with_strategy(
+            token,
+            BotguardStrategy::Android,
+        ))
     }
 
     /// Generate botguard token using iOS strategy
     async fn solve_ios(&self, input: &str) -> Result<BotguardResult, RytError> {
         let cache_key = format!("ios:{}", input);
-        
+
         // Check cache first
         if let Some(cached) = self.cache.get_botguard_token(&cache_key).await {
             return Ok(BotguardResult::with_strategy(cached, BotguardStrategy::Ios));
@@ -207,17 +219,19 @@ impl EnhancedBotguardSolver {
 
         // Simulate iOS client botguard token generation
         let token = format!("ios_token_{}", rand::random::<u32>());
-        
+
         // Cache the result
-        self.cache.set_botguard_token(&cache_key, token.clone()).await;
-        
+        self.cache
+            .set_botguard_token(&cache_key, token.clone())
+            .await;
+
         Ok(BotguardResult::with_strategy(token, BotguardStrategy::Ios))
     }
 
     /// Generate botguard token using Web strategy
     async fn solve_web(&self, input: &str) -> Result<BotguardResult, RytError> {
         let cache_key = format!("web:{}", input);
-        
+
         // Check cache first
         if let Some(cached) = self.cache.get_botguard_token(&cache_key).await {
             return Ok(BotguardResult::with_strategy(cached, BotguardStrategy::Web));
@@ -225,29 +239,37 @@ impl EnhancedBotguardSolver {
 
         // Simulate Web client botguard token generation
         let token = format!("web_token_{}", rand::random::<u32>());
-        
+
         // Cache the result
-        self.cache.set_botguard_token(&cache_key, token.clone()).await;
-        
+        self.cache
+            .set_botguard_token(&cache_key, token.clone())
+            .await;
+
         Ok(BotguardResult::with_strategy(token, BotguardStrategy::Web))
     }
 
     /// Generate botguard token using Visitor ID strategy
     async fn solve_visitor_id(&self, input: &str) -> Result<BotguardResult, RytError> {
         let cache_key = format!("visitor:{}", input);
-        
+
         // Check cache first
         if let Some(cached) = self.cache.get_visitor_id(&cache_key).await {
-            return Ok(BotguardResult::with_strategy(cached, BotguardStrategy::VisitorId));
+            return Ok(BotguardResult::with_strategy(
+                cached,
+                BotguardStrategy::VisitorId,
+            ));
         }
 
         // Simulate Visitor ID rotation
         let token = format!("visitor_token_{}", rand::random::<u32>());
-        
+
         // Cache the result
         self.cache.set_visitor_id(&cache_key, token.clone()).await;
-        
-        Ok(BotguardResult::with_strategy(token, BotguardStrategy::VisitorId))
+
+        Ok(BotguardResult::with_strategy(
+            token,
+            BotguardStrategy::VisitorId,
+        ))
     }
 }
 
@@ -266,7 +288,7 @@ impl BotguardSolver for EnhancedBotguardSolver {
     async fn solve(&self, input: &str) -> Result<BotguardResult, RytError> {
         // Try strategies in order until one succeeds
         let mut solver = EnhancedBotguardSolver::new();
-        
+
         while let Some(strategy) = solver.next_strategy() {
             let result = match strategy {
                 BotguardStrategy::Android => self.solve_android(input).await,
@@ -275,17 +297,21 @@ impl BotguardSolver for EnhancedBotguardSolver {
                 BotguardStrategy::VisitorId => self.solve_visitor_id(input).await,
                 BotguardStrategy::External => {
                     // External solver would be implemented here
-                    Err(RytError::BotguardError("External solver not implemented".to_string()))
+                    Err(RytError::BotguardError(
+                        "External solver not implemented".to_string(),
+                    ))
                 }
             };
-            
+
             if result.is_ok() {
                 return result;
             }
         }
-        
+
         // If all strategies failed, return error
-        Err(RytError::BotguardError("All botguard strategies failed".to_string()))
+        Err(RytError::BotguardError(
+            "All botguard strategies failed".to_string(),
+        ))
     }
 }
 
@@ -317,53 +343,55 @@ impl BotguardManager {
             ttl: Duration::from_secs(1800), // 30 minutes
         }
     }
-    
+
     /// Set botguard mode
     pub fn with_mode(mut self, mode: BotguardMode) -> Self {
         self.mode = mode;
         self
     }
-    
+
     /// Set solver
     pub fn with_solver(mut self, solver: Box<dyn BotguardSolver>) -> Self {
         self.solver = Some(solver);
         self
     }
-    
+
     /// Set cache
     pub fn with_cache(mut self, cache: Box<dyn BotguardCache>) -> Self {
         self.cache = Some(cache);
         self
     }
-    
+
     /// Set debug mode
     pub fn with_debug(mut self, debug: bool) -> Self {
         self.debug = debug;
         self
     }
-    
+
     /// Set TTL
     pub fn with_ttl(mut self, ttl: Duration) -> Self {
         self.ttl = ttl;
         self
     }
-    
+
     /// Check if botguard should be used
     pub fn should_use_botguard(&self) -> bool {
         matches!(self.mode, BotguardMode::Auto | BotguardMode::Force)
     }
-    
+
     /// Get botguard token
     pub async fn get_token(&self, input: &str) -> Result<Option<String>, RytError> {
         if !self.should_use_botguard() {
             return Ok(None);
         }
-        
-        let solver = self.solver.as_ref()
+
+        let solver = self
+            .solver
+            .as_ref()
             .ok_or_else(|| RytError::BotguardError("No solver configured".to_string()))?;
-        
+
         let cache = self.cache.as_ref();
-        
+
         // Check cache first
         if let Some(cache) = cache {
             if let Some(cached_result) = cache.get(input).await {
@@ -375,22 +403,22 @@ impl BotguardManager {
                 }
             }
         }
-        
+
         // Solve challenge
         if self.debug {
             println!("Solving botguard challenge for input: {}", input);
         }
-        
+
         let result = solver.solve(input).await?;
-        
+
         // Cache result
         if let Some(cache) = cache {
             cache.set(input, result.clone(), self.ttl).await;
         }
-        
+
         Ok(Some(result.token))
     }
-    
+
     /// Clear cache
     pub async fn clear_cache(&self) {
         if let Some(cache) = &self.cache {
@@ -456,7 +484,7 @@ mod tests {
     async fn test_memory_cache() {
         let cache = MemoryBotguardCache::new();
         let result = BotguardResult::new("test_token".to_string());
-        
+
         // Note: The current implementation doesn't actually store anything
         // This test just verifies the interface works
         cache.set("test_key", result, Duration::from_secs(60)).await;

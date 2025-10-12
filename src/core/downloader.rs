@@ -1,16 +1,16 @@
 //! Main downloader implementation
 
-use crate::core::{Progress, VideoInfo, FormatSelector, QualitySelector};
-use crate::error::RytError;
-use crate::utils::{extract_video_id, to_safe_filename};
-use crate::platform::{InnerTubeClient, PlayerResponse};
 use crate::core::video_info::Format;
+use crate::core::{FormatSelector, Progress, QualitySelector, VideoInfo};
 use crate::download::ChunkedDownloader;
+use crate::error::RytError;
+use crate::platform::{InnerTubeClient, PlayerResponse};
+use crate::utils::{extract_video_id, to_safe_filename};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use tracing::{info, debug, warn};
+use tracing::{debug, info, warn};
 
 /// Main downloader configuration
 #[derive(Debug, Clone)]
@@ -40,7 +40,7 @@ impl Default for DownloadOptions {
             desired_ext: None,
             output_path: None,
             rate_limit_bps: None,
-            client_name: "ANDROID".to_string(),  // ANDROID gives direct URLs without cipher complexity
+            client_name: "ANDROID".to_string(), // ANDROID gives direct URLs without cipher complexity
             client_version: "20.10.38".to_string(),
             timeout: Duration::from_secs(30),
             max_retries: 3,
@@ -160,15 +160,17 @@ impl Downloader {
         // Try to get player response with retry logic for age restrictions
         let mut last_error = None;
         let max_retries = 3;
-        
+
         for attempt in 0..=max_retries {
             let mut inner_tube = self.inner_tube.lock().await;
-            
+
             match inner_tube.get_player_response(&video_id).await {
                 Ok(player_response) => {
                     // Success, continue with processing
                     drop(inner_tube); // Release lock early
-                    let (final_url, video_info) = self.process_player_response(player_response, &video_id).await?;
+                    let (final_url, video_info) = self
+                        .process_player_response(player_response, &video_id)
+                        .await?;
 
                     // Professional: WEB fallback causes c=WEB in URL, breaking ANDROID client context
                     // ANDROID already returns valid itag=18 URLs without 'n' parameter - this is OK
@@ -178,11 +180,14 @@ impl Downloader {
                     return Ok((final_url, video_info));
                 }
                 Err(RytError::AgeRestricted) => {
-                    warn!("Age restriction detected on attempt {}, switching client", attempt + 1);
+                    warn!(
+                        "Age restriction detected on attempt {}, switching client",
+                        attempt + 1
+                    );
                     // Switch client for age restriction
                     inner_tube.switch_client_for_error(&RytError::AgeRestricted);
                     last_error = Some(RytError::AgeRestricted);
-                    
+
                     // Wait before retry
                     if attempt < max_retries {
                         drop(inner_tube); // Release lock before sleep
@@ -195,59 +200,63 @@ impl Downloader {
                 }
             }
         }
-        
+
         // If we get here, all retries failed
         Err(last_error.unwrap_or(RytError::AgeRestricted))
     }
-    
-    /// Process player response and extract video info
-    async fn process_player_response(&mut self, player_response: PlayerResponse, video_id: &str) -> Result<(String, VideoInfo), RytError> {
 
+    /// Process player response and extract video info
+    async fn process_player_response(
+        &mut self,
+        player_response: PlayerResponse,
+        video_id: &str,
+    ) -> Result<(String, VideoInfo), RytError> {
         // Parse formats
         let formats = player_response.parse_formats()?;
         debug!("Found {} formats for video {}", formats.len(), video_id);
-        
+
         // Debug: print all formats
         // println!("📋 Available formats ({}):", formats.len());
         // for (i, format) in formats.iter().enumerate() {
-        //     println!("  {}: itag={}, quality={}, url_len={}, needs_deciphering={}", 
+        //     println!("  {}: itag={}, quality={}, url_len={}, needs_deciphering={}",
         //         i, format.itag, format.quality, format.url.len(), format.needs_deciphering());
         //     if let Some(sig_cipher) = &format.signature_cipher {
         //         println!("    signature_cipher: {}", sig_cipher);
         //     }
         // }
-        
+
         // Check if we got muxed formats (itag 18, 22, etc.) - these are stable and don't get 403
         let all_itags: Vec<u32> = formats.iter().map(|f| f.itag).collect();
         debug!("All itags from ANDROID: {:?}", all_itags);
         let has_muxed = formats.iter().any(|f| matches!(f.itag, 18 | 22 | 43 | 36));
         debug!("has_muxed={}, will try IOS={}", has_muxed, !has_muxed);
-        
+
         // If only adaptive formats (itag 299+), try to get muxed from IOS client
         let formats = if !has_muxed {
             debug!("No muxed formats found (only adaptive), trying IOS client for itag 18/22");
             // IOS client often returns muxed formats that ANDROID doesn't provide
             let mut ios_inner_tube = InnerTubeClient::new().with_client("IOS", "19.29.1");
-            
+
             match ios_inner_tube.get_player_response(video_id).await {
-                Ok(ios_response) => {
-                    match ios_response.parse_formats() {
-                        Ok(ios_formats) if !ios_formats.is_empty() => {
-                            let has_ios_muxed = ios_formats.iter().any(|f| matches!(f.itag, 18 | 22));
-                            if has_ios_muxed {
-                                debug!("✅ IOS client returned {} formats with muxed (itag 18/22)", ios_formats.len());
-                                ios_formats
-                            } else {
-                                debug!("IOS also has no muxed formats, using original ANDROID");
-                                formats
-                            }
-                        }
-                        _ => {
-                            debug!("IOS response parse failed or empty, using ANDROID");
+                Ok(ios_response) => match ios_response.parse_formats() {
+                    Ok(ios_formats) if !ios_formats.is_empty() => {
+                        let has_ios_muxed = ios_formats.iter().any(|f| matches!(f.itag, 18 | 22));
+                        if has_ios_muxed {
+                            debug!(
+                                "✅ IOS client returned {} formats with muxed (itag 18/22)",
+                                ios_formats.len()
+                            );
+                            ios_formats
+                        } else {
+                            debug!("IOS also has no muxed formats, using original ANDROID");
                             formats
                         }
                     }
-                }
+                    _ => {
+                        debug!("IOS response parse failed or empty, using ANDROID");
+                        formats
+                    }
+                },
                 Err(e) => {
                     warn!("IOS client request failed: {}, using ANDROID formats", e);
                     formats
@@ -256,24 +265,34 @@ impl Downloader {
         } else {
             formats
         };
-        
+
         // Strongly prefer muxed formats (itag 18/22) to avoid 403
-        let selected_format = formats.iter()
+        let selected_format = formats
+            .iter()
             .filter(|f| matches!(f.itag, 18 | 22))
             .max_by_key(|f| f.height.unwrap_or(0))
-            .or_else(|| formats.iter().filter(|f| matches!(f.itag, 43 | 36)).max_by_key(|f| f.height.unwrap_or(0)))
+            .or_else(|| {
+                formats
+                    .iter()
+                    .filter(|f| matches!(f.itag, 43 | 36))
+                    .max_by_key(|f| f.height.unwrap_or(0))
+            })
             .or_else(|| self.select_format(&formats).ok())
             .ok_or_else(|| RytError::NoFormatFound)?;
-        debug!("Selected format: itag={}, quality={}, size={} (muxed={})",
-               selected_format.itag, selected_format.quality, 
-               selected_format.size.unwrap_or(0),
-               matches!(selected_format.itag, 18 | 22 | 43 | 36));
-        
+        debug!(
+            "Selected format: itag={}, quality={}, size={} (muxed={})",
+            selected_format.itag,
+            selected_format.quality,
+            selected_format.size.unwrap_or(0),
+            matches!(selected_format.itag, 18 | 22 | 43 | 36)
+        );
+
         // Resolve final URL with signature deciphering
         let mut final_url = if selected_format.needs_deciphering() {
             debug!("Format requires deciphering, resolving cipher...");
             let video_url = format!("https://www.youtube.com/watch?v={}", video_id);
-            self.resolve_format_url_with_cipher(selected_format, &video_url).await?
+            self.resolve_format_url_with_cipher(selected_format, &video_url)
+                .await?
         } else {
             debug!("Format does not require deciphering");
             selected_format.url.clone()
@@ -282,9 +301,19 @@ impl Downloader {
         // Normalize final_url for direct URL path as well (ratebypass, alr, n, drop rqh)
         if let Ok(mut parsed) = url::Url::parse(&final_url) {
             // If n present, try to decode and rewrite query pairs safely
-            if let Some(n_val) = parsed.query_pairs().find(|(k, _)| k == "n").map(|(_, v)| v.to_string()) {
+            if let Some(n_val) = parsed
+                .query_pairs()
+                .find(|(k, _)| k == "n")
+                .map(|(_, v)| v.to_string())
+            {
                 let cipher = crate::platform::cipher::Cipher::new();
-                if let Ok(n_out) = cipher.decipher_n_parameter(&n_val, &format!("https://www.youtube.com/watch?v={}", video_id)).await {
+                if let Ok(n_out) = cipher
+                    .decipher_n_parameter(
+                        &n_val,
+                        &format!("https://www.youtube.com/watch?v={}", video_id),
+                    )
+                    .await
+                {
                     // Collect pairs first (immutable borrow), then rebuild (mutable borrow)
                     let pairs: Vec<(String, String)> = parsed
                         .query_pairs()
@@ -305,28 +334,43 @@ impl Downloader {
                     }
                     {
                         let mut qp = parsed.query_pairs_mut();
-                        qp.clear().extend_pairs(new_pairs.iter().map(|(k, v)| (k.as_str(), v.as_str())));
+                        qp.clear()
+                            .extend_pairs(new_pairs.iter().map(|(k, v)| (k.as_str(), v.as_str())));
                     }
                 }
             }
             // Add missing critical params (DO NOT remove rqh!)
-            let sparams_val = parsed.query_pairs().find(|(k, _)| k == "sparams").map(|(_, v)| v.to_string());
+            let sparams_val = parsed
+                .query_pairs()
+                .find(|(k, _)| k == "sparams")
+                .map(|(_, v)| v.to_string());
             let has_rqh = parsed.query_pairs().any(|(k, _)| k == "rqh");
             let sparams_has_rqh = sparams_val.as_ref().map_or(false, |s| s.contains("rqh"));
             let has_ratebypass = parsed.query_pairs().any(|(k, _)| k == "ratebypass");
             let has_alr = parsed.query_pairs().any(|(k, _)| k == "alr");
-            
-            debug!("Direct URL norm: has_rqh={}, sparams_has_rqh={}, adding={}", 
-                   has_rqh, sparams_has_rqh, sparams_has_rqh && !has_rqh);
-            
+
+            debug!(
+                "Direct URL norm: has_rqh={}, sparams_has_rqh={}, adding={}",
+                has_rqh,
+                sparams_has_rqh,
+                sparams_has_rqh && !has_rqh
+            );
+
             {
                 let mut qp = parsed.query_pairs_mut();
-                if !has_ratebypass { qp.append_pair("ratebypass", "yes"); }
-                if !has_alr { qp.append_pair("alr", "yes"); }
+                if !has_ratebypass {
+                    qp.append_pair("ratebypass", "yes");
+                }
+                if !has_alr {
+                    qp.append_pair("alr", "yes");
+                }
                 // CRITICAL FIX: Add rqh=1 if sparams lists it (required for itag=18)
                 if sparams_has_rqh && !has_rqh {
                     qp.append_pair("rqh", "1");
-                    debug!("✅ CRITICAL: Added rqh=1 to direct URL (itag={})", selected_format.itag);
+                    debug!(
+                        "✅ CRITICAL: Added rqh=1 to direct URL (itag={})",
+                        selected_format.itag
+                    );
                 }
             }
             let s: String = parsed.into();
@@ -341,14 +385,30 @@ impl Downloader {
         // Create video info
         let video_info = VideoInfo {
             id: video_id.to_string(),
-            title: player_response.video_details.as_ref().map(|v| v.title.clone()).unwrap_or_default(),
-            author: player_response.video_details.as_ref().map(|v| v.author.clone()).unwrap_or_default(),
-            duration: player_response.video_details.as_ref()
+            title: player_response
+                .video_details
+                .as_ref()
+                .map(|v| v.title.clone())
+                .unwrap_or_default(),
+            author: player_response
+                .video_details
+                .as_ref()
+                .map(|v| v.author.clone())
+                .unwrap_or_default(),
+            duration: player_response
+                .video_details
+                .as_ref()
                 .and_then(|v| v.length_seconds.parse().ok())
                 .unwrap_or(0),
-            description: player_response.video_details.as_ref().map(|v| v.short_description.clone()).unwrap_or_default(),
+            description: player_response
+                .video_details
+                .as_ref()
+                .map(|v| v.short_description.clone())
+                .unwrap_or_default(),
             formats,
-            thumbnail: player_response.video_details.as_ref()
+            thumbnail: player_response
+                .video_details
+                .as_ref()
                 .and_then(|v| v.thumbnail.thumbnails.first())
                 .map(|t| t.url.clone()),
             upload_date: None,
@@ -382,7 +442,8 @@ impl Downloader {
                 Ok(()) => {
                     info!("Download completed successfully");
                     // Update video info with output path
-                    video_info.title = output_path.file_stem()
+                    video_info.title = output_path
+                        .file_stem()
                         .and_then(|s| s.to_str())
                         .unwrap_or("video")
                         .to_string();
@@ -405,11 +466,17 @@ impl Downloader {
         }
 
         // If we got here, all attempts failed
-        Err(RytError::Generic("Download failed after retries".to_string()))
+        Err(RytError::Generic(
+            "Download failed after retries".to_string(),
+        ))
     }
 
     /// Download playlist
-    pub async fn download_playlist(&mut self, playlist_url: &str, limit: Option<usize>) -> Result<Vec<VideoInfo>, RytError> {
+    pub async fn download_playlist(
+        &mut self,
+        playlist_url: &str,
+        limit: Option<usize>,
+    ) -> Result<Vec<VideoInfo>, RytError> {
         // Extract playlist ID
         let playlist_id = crate::utils::url::extract_playlist_id(playlist_url)?;
 
@@ -438,7 +505,10 @@ impl Downloader {
     /// Select format based on selector
     fn select_format<'a>(&self, formats: &'a [Format]) -> Result<&'a Format, RytError> {
         let default_selector = FormatSelector::new(QualitySelector::Best);
-        let selector = self.options.format_selector.as_ref()
+        let selector = self
+            .options
+            .format_selector
+            .as_ref()
             .unwrap_or(&default_selector);
 
         let mut candidates: Vec<&Format> = formats.iter().collect();
@@ -476,29 +546,31 @@ impl Downloader {
             QualitySelector::Itag(target_itag) => {
                 candidates.iter().find(|f| f.itag == *target_itag).copied()
             }
-            QualitySelector::Height(target_height) => {
-                candidates.iter()
-                    .filter(|f| f.height.unwrap_or(0) == *target_height)
-                    .max_by_key(|f| f.bitrate)
-                    .copied()
-            }
-            QualitySelector::HeightLessOrEqual(target_height) => {
-                candidates.iter()
-                    .filter(|f| f.height.unwrap_or(0) <= *target_height)
-                    .max_by_key(|f| f.bitrate)
-                    .copied()
-            }
-            QualitySelector::HeightGreaterOrEqual(target_height) => {
-                candidates.iter()
-                    .filter(|f| f.height.unwrap_or(0) >= *target_height)
-                    .max_by_key(|f| f.bitrate)
-                    .copied()
-            }
-        }.ok_or(RytError::NoFormatFound)
+            QualitySelector::Height(target_height) => candidates
+                .iter()
+                .filter(|f| f.height.unwrap_or(0) == *target_height)
+                .max_by_key(|f| f.bitrate)
+                .copied(),
+            QualitySelector::HeightLessOrEqual(target_height) => candidates
+                .iter()
+                .filter(|f| f.height.unwrap_or(0) <= *target_height)
+                .max_by_key(|f| f.bitrate)
+                .copied(),
+            QualitySelector::HeightGreaterOrEqual(target_height) => candidates
+                .iter()
+                .filter(|f| f.height.unwrap_or(0) >= *target_height)
+                .max_by_key(|f| f.bitrate)
+                .copied(),
+        }
+        .ok_or(RytError::NoFormatFound)
     }
 
     /// Resolve format URL with signature deciphering
-    async fn resolve_format_url_with_cipher(&self, format: &Format, video_url: &str) -> Result<String, RytError> {
+    async fn resolve_format_url_with_cipher(
+        &self,
+        format: &Format,
+        video_url: &str,
+    ) -> Result<String, RytError> {
         use crate::platform::cipher::Cipher;
 
         // println!("🔧 Starting cipher resolution for format itag={}", format.itag);
@@ -508,7 +580,7 @@ impl Downloader {
         // Handle signature cipher
         if let Some(sig_cipher) = &format.signature_cipher {
             // println!("🔧 Parsing signature cipher: {}", sig_cipher);
-            
+
             // Parse signature cipher parameters
             let sig_params: std::collections::HashMap<String, String> =
                 url::form_urlencoded::parse(sig_cipher.as_bytes())
@@ -526,14 +598,20 @@ impl Downloader {
                 println!("🔧 Deciphering signature: {}", signature);
                 let deciphered_sig = cipher.decipher_signature(signature, video_url).await?;
                 println!("🔧 Deciphered signature: {}", deciphered_sig);
-                
+
                 // Replace existing sig parameter or add new one
                 let sig_regex = regex::Regex::new(r"[?&]sig=([^&]+)")?;
                 if sig_regex.is_match(&final_url) {
                     // Replace existing sig parameter
-                    final_url = sig_regex.replace(&final_url, |caps: &regex::Captures| {
-                        format!("{}sig={}", &caps[0][..caps[0].find('=').unwrap() + 1], deciphered_sig)
-                    }).to_string();
+                    final_url = sig_regex
+                        .replace(&final_url, |caps: &regex::Captures| {
+                            format!(
+                                "{}sig={}",
+                                &caps[0][..caps[0].find('=').unwrap() + 1],
+                                deciphered_sig
+                            )
+                        })
+                        .to_string();
                     println!("🔧 Replaced sig parameter in URL");
                 } else {
                     // Add new sig parameter
@@ -547,7 +625,7 @@ impl Downloader {
                 // println!("🔧 Deciphering n-parameter: {}", n_param);
                 let deciphered_n = cipher.decipher_n_parameter(n_param, video_url).await?;
                 // println!("🔧 Deciphered n-parameter: {}", deciphered_n);
-                
+
                 // Add n-parameter to URL
                 if final_url.contains("&n=") {
                     final_url = final_url.replace("&n=", &format!("&n={}", deciphered_n));
@@ -556,13 +634,15 @@ impl Downloader {
                 }
             }
         }
-        
+
         // Handle n-parameter in URL
         if final_url.contains("&n=") || final_url.contains("?n=") {
             let n_regex = regex::Regex::new(r"[?&]n=([^&]+)")?;
             if let Some(captures) = n_regex.captures(&final_url) {
                 if let Some(n_param) = captures.get(1) {
-                    let deciphered_n = cipher.decipher_n_parameter(n_param.as_str(), video_url).await?;
+                    let deciphered_n = cipher
+                        .decipher_n_parameter(n_param.as_str(), video_url)
+                        .await?;
                     final_url = final_url.replace(n_param.as_str(), &deciphered_n);
                 }
             }
@@ -578,14 +658,24 @@ impl Downloader {
             let has_alr = parsed.query_pairs().any(|(k, _)| k == "alr");
 
             // Add missing params. If sparams contains rqh but rqh parameter is missing, add it
-            let sparams_val = parsed.query_pairs().find(|(k, _)| k == "sparams").map(|(_, v)| v.to_string());
+            let sparams_val = parsed
+                .query_pairs()
+                .find(|(k, _)| k == "sparams")
+                .map(|(_, v)| v.to_string());
             let has_rqh = parsed.query_pairs().any(|(k, _)| k == "rqh");
             let sparams_has_rqh = sparams_val.as_ref().map_or(false, |s| s.contains("rqh"));
-            let current_fvip = parsed.query_pairs().find(|(k, _)| k == "fvip").map(|(_, v)| v.to_string());
-            
-            debug!("URL normalization: has_rqh={}, sparams_has_rqh={}, will add rqh={}", 
-                   has_rqh, sparams_has_rqh, sparams_has_rqh && !has_rqh);
-            
+            let current_fvip = parsed
+                .query_pairs()
+                .find(|(k, _)| k == "fvip")
+                .map(|(_, v)| v.to_string());
+
+            debug!(
+                "URL normalization: has_rqh={}, sparams_has_rqh={}, will add rqh={}",
+                has_rqh,
+                sparams_has_rqh,
+                sparams_has_rqh && !has_rqh
+            );
+
             {
                 let mut qp = parsed.query_pairs_mut();
                 if !has_ratebypass {
@@ -602,7 +692,7 @@ impl Downloader {
                     debug!("✅ Added rqh=1 (required by sparams)");
                 }
             }
-            
+
             // Professional 403 mitigation: rotate fvip (front video IP) to get different CDN server
             // YouTube uses fvip=1..5 for load balancing; rotating helps bypass temporary blocks
             if let Some(fvip_str) = current_fvip {
@@ -610,16 +700,21 @@ impl Downloader {
                     // Cycle through fvip 1-5
                     let new_fvip = (fvip_num % 5) + 1;
                     // Rebuild query without fvip
-                    let pairs: Vec<(String, String)> = parsed.query_pairs()
+                    let pairs: Vec<(String, String)> = parsed
+                        .query_pairs()
                         .filter(|(k, _)| k != "fvip")
                         .map(|(k, v)| (k.into_owned(), v.into_owned()))
                         .collect();
                     {
                         let mut qp = parsed.query_pairs_mut();
-                        qp.clear().extend_pairs(pairs.iter().map(|(k, v)| (k.as_str(), v.as_str())));
+                        qp.clear()
+                            .extend_pairs(pairs.iter().map(|(k, v)| (k.as_str(), v.as_str())));
                         qp.append_pair("fvip", &new_fvip.to_string());
                     }
-                    debug!("Rotated fvip from {} to {} for CDN failover", fvip_num, new_fvip);
+                    debug!(
+                        "Rotated fvip from {} to {} for CDN failover",
+                        fvip_num, new_fvip
+                    );
                 }
             }
 
@@ -684,7 +779,10 @@ mod tests {
             .with_botguard(crate::platform::botguard::BotguardMode::Auto)
             .with_botguard_debug(true);
 
-        assert_eq!(downloader.botguard.mode, crate::platform::botguard::BotguardMode::Auto);
+        assert_eq!(
+            downloader.botguard.mode,
+            crate::platform::botguard::BotguardMode::Auto
+        );
         assert!(downloader.botguard.debug);
     }
 }
