@@ -2,6 +2,7 @@
 name = "ryt"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.81.0"
 authors = ["Roman Italian <roman@example.com>"]
 description = "RYT - Rust Video Downloader - Fast and reliable video downloader"
 license = "MIT"
