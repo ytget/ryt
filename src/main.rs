@@ -210,3 +210,50 @@ fn format_duration(duration: std::time::Duration) -> String {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_init_logging() {
+        // Test that logging initialization doesn't panic
+        let result = init_logging();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_format_duration_seconds() {
+        let duration = std::time::Duration::from_secs(45);
+        let formatted = format_duration(duration);
+        assert_eq!(formatted, "45s");
+    }
+
+    #[test]
+    fn test_format_duration_minutes() {
+        let duration = std::time::Duration::from_secs(125);
+        let formatted = format_duration(duration);
+        assert_eq!(formatted, "2m 5s");
+    }
+
+    #[test]
+    fn test_format_duration_hours() {
+        let duration = std::time::Duration::from_secs(3661);
+        let formatted = format_duration(duration);
+        assert_eq!(formatted, "1h 1m");
+    }
+
+    #[test]
+    fn test_format_duration_only_hours() {
+        let duration = std::time::Duration::from_secs(7200);
+        let formatted = format_duration(duration);
+        assert_eq!(formatted, "2h");
+    }
+
+    #[test]
+    fn test_format_duration_zero() {
+        let duration = std::time::Duration::from_secs(0);
+        let formatted = format_duration(duration);
+        assert_eq!(formatted, "0s");
+    }
+}
