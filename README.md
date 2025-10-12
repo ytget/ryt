@@ -1,7 +1,7 @@
 # RYT - Rust Video Downloader
 
 <div align="center">
-  <img src="imgs/logos/ryt-logo-v2.png" alt="RYT Logo" width="200">
+  <img src="imgs/logos/ryt-logo-v2.png" alt="RYT - Rust Video Downloader - Logo" width="200">
 </div>
 
 [![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org)
@@ -9,6 +9,16 @@
 [![Build Status](https://github.com/ytget/ryt/workflows/CI/badge.svg)](https://github.com/ytget/ryt/actions)
 [![codecov](https://codecov.io/gh/ytget/ryt/branch/main/graph/badge.svg)](https://codecov.io/gh/ytget/ryt)
 [![Crates.io](https://img.shields.io/crates/v/ryt.svg)](https://crates.io/crates/ryt)
+[![Downloads](https://img.shields.io/crates/d/ryt.svg)](https://crates.io/crates/ryt)
+[![Maintenance](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)](https://github.com/ytget/ryt)
+[![Security](https://img.shields.io/badge/security-dependabot-blue.svg)](https://github.com/ytget/ryt/security/dependabot)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg)](https://github.com/ytget/ryt)
+[![Dependencies](https://img.shields.io/badge/dependencies-up--to--date-brightgreen.svg)](https://github.com/ytget/ryt)
+[![GitHub issues](https://img.shields.io/github/issues/ytget/ryt.svg)](https://github.com/ytget/ryt/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/ytget/ryt.svg)](https://github.com/ytget/ryt/pulls)
+[![GitHub last commit](https://img.shields.io/github/last-commit/ytget/ryt.svg)](https://github.com/ytget/ryt)
+[![GitHub stars](https://img.shields.io/github/stars/ytget/ryt.svg?style=social&label=Star)](https://github.com/ytget/ryt)
+[![Size](https://img.shields.io/badge/size-~2MB-blue.svg)](https://github.com/ytget/ryt)
 
 Fast and reliable video downloader written in Rust.
 
