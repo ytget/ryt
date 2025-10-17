@@ -20,7 +20,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/ytget/ryt.svg?style=social&label=Star)](https://github.com/ytget/ryt)
 [![Size](https://img.shields.io/badge/size-~2MB-blue.svg)](https://github.com/ytget/ryt)
 
-Fast and reliable video downloader written in Rust.
+RYT is a blazingly fast, memory-safe, and exceptionally reliable video downloader engineered with Rust's cutting-edge systems programming capabilities. This sophisticated tool delivers unparalleled performance through zero-cost abstractions and fearless concurrency, ensuring lightning-fast downloads without the overhead of garbage collection or the dreaded specter of segmentation faults. Built with a modern asynchronous architecture and featuring an intuitive command-line interface with elegant progress visualization, RYT seamlessly handles complex video extraction tasks while maintaining rock-solid stability across Linux, macOS, and Windows platforms. Its advanced Botguard protection mechanisms intelligently bypass sophisticated anti-bot detection systems, while the modular, well-tested codebase guarantees maintainability and extensibility for power users and developers alike.
 
 ## Features
 
