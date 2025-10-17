@@ -756,4 +756,221 @@ mod tests {
         assert_eq!(client.config().max_retries, 5);
         assert_eq!(client.config().user_agent, Some("Custom Agent".to_string()));
     }
+
+    #[test]
+    fn test_client_type_all() {
+        let all_types = ClientType::all();
+        assert_eq!(all_types.len(), 10);
+        assert!(all_types.contains(&ClientType::Chrome));
+        assert!(all_types.contains(&ClientType::Android));
+        assert!(all_types.contains(&ClientType::Ios));
+    }
+
+    #[test]
+    fn test_client_type_from_str() {
+        assert_eq!(ClientType::from_str("chrome"), Some(ClientType::Chrome));
+        assert_eq!(ClientType::from_str("Chrome"), Some(ClientType::Chrome));
+        assert_eq!(ClientType::from_str("CHROME"), Some(ClientType::Chrome));
+        assert_eq!(ClientType::from_str("android"), Some(ClientType::Android));
+        assert_eq!(ClientType::from_str("ios"), Some(ClientType::Ios));
+        assert_eq!(ClientType::from_str("samsung"), Some(ClientType::SamsungBrowser));
+        assert_eq!(ClientType::from_str("invalid"), None);
+    }
+
+    #[test]
+    fn test_client_type_to_string() {
+        assert_eq!(ClientType::Chrome.to_string(), "chrome");
+        assert_eq!(ClientType::Android.to_string(), "android");
+        assert_eq!(ClientType::Ios.to_string(), "ios");
+        assert_eq!(ClientType::SamsungBrowser.to_string(), "samsung");
+    }
+
+    #[test]
+    fn test_client_type_is_mobile() {
+        assert!(ClientType::Android.is_mobile());
+        assert!(ClientType::Ios.is_mobile());
+        assert!(ClientType::SamsungBrowser.is_mobile());
+        assert!(!ClientType::Chrome.is_mobile());
+        assert!(!ClientType::Firefox.is_mobile());
+        assert!(!ClientType::AndroidTV.is_mobile());
+    }
+
+    #[test]
+    fn test_client_type_is_web() {
+        assert!(ClientType::Chrome.is_web());
+        assert!(ClientType::Firefox.is_web());
+        assert!(ClientType::Safari.is_web());
+        assert!(ClientType::Edge.is_web());
+        assert!(ClientType::Opera.is_web());
+        assert!(!ClientType::Android.is_web());
+        assert!(!ClientType::Ios.is_web());
+    }
+
+    #[test]
+    fn test_client_type_is_tv() {
+        assert!(ClientType::AndroidTV.is_tv());
+        assert!(ClientType::SmartTV.is_tv());
+        assert!(!ClientType::Chrome.is_tv());
+        assert!(!ClientType::Android.is_tv());
+    }
+
+    #[test]
+    fn test_client_switching_strategy_default() {
+        assert_eq!(ClientSwitchingStrategy::default(), ClientSwitchingStrategy::Smart);
+    }
+
+    #[test]
+    fn test_http_client_config_default() {
+        let config = HttpClientConfig::default();
+        assert_eq!(config.timeout, Duration::from_secs(30));
+        assert_eq!(config.max_retries, 3);
+        assert_eq!(config.user_agent, None);
+        assert_eq!(config.proxy_url, None);
+        assert_eq!(config.client_type, ClientType::Chrome);
+        assert!(config.enable_client_switching);
+        assert_eq!(config.switching_strategy, ClientSwitchingStrategy::Smart);
+        assert!(!config.http1_only);
+    }
+
+    #[test]
+    fn test_video_client_default() {
+        let client = VideoClient::default();
+        assert_eq!(client.config().timeout, Duration::from_secs(30));
+        assert_eq!(client.config().max_retries, 3);
+    }
+
+    #[test]
+    fn test_video_client_current_client_type() {
+        let client = VideoClient::new();
+        assert_eq!(client.current_client_type(), ClientType::Chrome);
+    }
+
+    #[test]
+    fn test_video_client_client_switch_count() {
+        let client = VideoClient::new();
+        assert_eq!(client.client_switch_count(), 0);
+    }
+
+    #[test]
+    fn test_video_client_switch_client() {
+        let mut client = VideoClient::new();
+        let initial_type = client.current_client_type();
+        let new_type = client.switch_client();
+        
+        // Should switch to next client in round-robin
+        assert_ne!(initial_type, new_type);
+        assert_eq!(client.client_switch_count(), 1);
+    }
+
+    #[test]
+    fn test_video_client_switch_to_client() {
+        let mut client = VideoClient::new();
+        client.switch_to_client(ClientType::Android);
+        
+        assert_eq!(client.current_client_type(), ClientType::Android);
+        assert_eq!(client.client_switch_count(), 1);
+    }
+
+    #[test]
+    fn test_video_client_reset_client_switching() {
+        let mut client = VideoClient::new();
+        client.switch_client();
+        client.switch_client();
+        
+        assert!(client.client_switch_count() > 0);
+        
+        client.reset_client_switching();
+        
+        assert_eq!(client.client_switch_count(), 0);
+        assert_eq!(client.current_client_type(), ClientType::Chrome);
+    }
+
+    #[test]
+    fn test_video_client_switch_client_disabled() {
+        let mut config = HttpClientConfig::default();
+        config.enable_client_switching = false;
+        let mut client = VideoClient::with_config(config);
+        
+        let initial_type = client.current_client_type();
+        let new_type = client.switch_client();
+        
+        // Should not switch when disabled
+        assert_eq!(initial_type, new_type);
+        assert_eq!(client.client_switch_count(), 0);
+    }
+
+    #[test]
+    fn test_video_client_switch_client_by_strategy_round_robin() {
+        let mut config = HttpClientConfig::default();
+        config.switching_strategy = ClientSwitchingStrategy::RoundRobin;
+        let mut client = VideoClient::with_config(config);
+        
+        let initial_type = client.current_client_type();
+        let new_type = client.switch_client_by_strategy(None);
+        
+        // Should switch to next client
+        assert_ne!(initial_type, new_type);
+    }
+
+    #[test]
+    fn test_video_client_switch_client_by_strategy_on_error() {
+        let mut config = HttpClientConfig::default();
+        config.switching_strategy = ClientSwitchingStrategy::OnError;
+        let mut client = VideoClient::with_config(config);
+        
+        let error = RytError::RateLimited;
+        let new_type = client.switch_client_by_strategy(Some(&error));
+        
+        // Should switch to Android for rate limiting
+        assert_eq!(new_type, ClientType::Android);
+    }
+
+    #[test]
+    fn test_video_client_switch_client_by_strategy_on_geo_block() {
+        let mut config = HttpClientConfig::default();
+        config.switching_strategy = ClientSwitchingStrategy::OnGeoBlock;
+        let mut client = VideoClient::with_config(config);
+        
+        let error = RytError::VideoUnavailable;
+        let new_type = client.switch_client_by_strategy(Some(&error));
+        
+        // Should switch to Android for geo-blocking
+        assert_eq!(new_type, ClientType::Android);
+    }
+
+    #[test]
+    fn test_video_client_create_request() {
+        let client = VideoClient::new();
+        let request = client.create_request(reqwest::Method::GET, "https://example.com");
+        
+        // Request should be created successfully
+        assert!(request.try_clone().is_some());
+    }
+
+    #[test]
+    fn test_video_client_create_realistic_request() {
+        let client = VideoClient::new();
+        let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
+        
+        // Request should be created successfully
+        assert!(request.try_clone().is_some());
+    }
+
+    #[test]
+    fn test_video_client_create_simple_media_request() {
+        let client = VideoClient::new();
+        let request = client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
+        
+        // Request should be created successfully
+        assert!(request.try_clone().is_some());
+    }
+
+    #[test]
+    fn test_video_client_create_innertube_request() {
+        let client = VideoClient::new();
+        let request = client.create_innertube_request("https://example.com");
+        
+        // Request should be created successfully
+        assert!(request.try_clone().is_some());
+    }
 }

@@ -633,20 +633,101 @@ mod tests {
         let client = InnerTubeClient::new();
         assert_eq!(client.client_name, "ANDROID");
         assert_eq!(client.client_version, "20.10.38");
+        assert!(client.api_key.is_none());
+        assert!(client.visitor_id.is_none());
     }
 
     #[test]
     fn test_innertube_client_with_client() {
-        let client = InnerTubeClient::new().with_client("WEB", "2.20250312.04.00");
-
+        let client = InnerTubeClient::new()
+            .with_client("WEB", "2.20251002.00.00");
+        
         assert_eq!(client.client_name, "WEB");
-        assert_eq!(client.client_version, "2.20250312.04.00");
+        assert_eq!(client.client_version, "2.20251002.00.00");
     }
 
     #[test]
     fn test_innertube_client_with_visitor_id() {
-        let client = InnerTubeClient::new().with_visitor_id("test_visitor_id");
+        let client = InnerTubeClient::new()
+            .with_visitor_id("test_visitor_123");
+        
+        assert_eq!(client.visitor_id, Some("test_visitor_123".to_string()));
+    }
 
-        assert_eq!(client.visitor_id, Some("test_visitor_id".to_string()));
+    #[test]
+    fn test_innertube_client_chaining() {
+        let client = InnerTubeClient::new()
+            .with_client("IOS", "20.10.38")
+            .with_visitor_id("test_visitor_456");
+        
+        assert_eq!(client.client_name, "IOS");
+        assert_eq!(client.client_version, "20.10.38");
+        assert_eq!(client.visitor_id, Some("test_visitor_456".to_string()));
+    }
+
+    #[test]
+    fn test_innertube_client_switch_client_for_error() {
+        let mut client = InnerTubeClient::new();
+        let error = RytError::RateLimited;
+        
+        // Should not panic
+        client.switch_client_for_error(&error);
+    }
+
+    #[test]
+    fn test_format_deserialization() {
+        let json = r#"{
+            "itag": 22,
+            "url": "https://example.com/video.mp4",
+            "quality": "hd720",
+            "mime_type": "video/mp4",
+            "bitrate": 1000000,
+            "fps": 30,
+            "width": 1280,
+            "height": 720
+        }"#;
+        
+        let format: Result<Format, _> = serde_json::from_str(json);
+        assert!(format.is_ok());
+        
+        let format = format.unwrap();
+        assert_eq!(format.itag, 22);
+        assert_eq!(format.url, "https://example.com/video.mp4");
+        assert_eq!(format.quality, "hd720");
+        assert_eq!(format.mime_type, "video/mp4");
+        assert_eq!(format.bitrate, 1000000);
+        assert_eq!(format.fps, Some(30));
+        assert_eq!(format.width, Some(1280));
+        assert_eq!(format.height, Some(720));
+    }
+
+    #[test]
+    fn test_text_run_deserialization() {
+        let json = r#"{"text": "Test Text"}"#;
+        let text_run: Result<TextRun, _> = serde_json::from_str(json);
+        assert!(text_run.is_ok());
+        
+        let text_run = text_run.unwrap();
+        assert_eq!(text_run.text, "Test Text");
+    }
+
+    #[test]
+    fn test_thumbnail_deserialization() {
+        let json = r#"{
+            "thumbnails": [{
+                "url": "https://example.com/thumb.jpg",
+                "width": 320,
+                "height": 180
+            }]
+        }"#;
+        
+        let thumbnail: Result<Thumbnail, _> = serde_json::from_str(json);
+        assert!(thumbnail.is_ok());
+        
+        let thumbnail = thumbnail.unwrap();
+        assert_eq!(thumbnail.thumbnails.len(), 1);
+        assert_eq!(thumbnail.thumbnails[0].url, "https://example.com/thumb.jpg");
+        assert_eq!(thumbnail.thumbnails[0].width, 320);
+        assert_eq!(thumbnail.thumbnails[0].height, 180);
     }
 }
