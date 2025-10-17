@@ -20,7 +20,24 @@
 [![GitHub stars](https://img.shields.io/github/stars/ytget/ryt.svg?style=social&label=Star)](https://github.com/ytget/ryt)
 [![Size](https://img.shields.io/badge/size-~2MB-blue.svg)](https://github.com/ytget/ryt)
 
-RYT is a blazingly fast, memory-safe, and exceptionally reliable video downloader engineered with Rust's cutting-edge systems programming capabilities. This sophisticated tool delivers unparalleled performance through zero-cost abstractions and fearless concurrency, ensuring lightning-fast downloads without the overhead of garbage collection or the dreaded specter of segmentation faults. Built with a modern asynchronous architecture and featuring an intuitive command-line interface with elegant progress visualization, RYT seamlessly handles complex video extraction tasks while maintaining rock-solid stability across Linux, macOS, and Windows platforms. Its advanced Botguard protection mechanisms intelligently bypass sophisticated anti-bot detection systems, while the modular, well-tested codebase guarantees maintainability and extensibility for power users and developers alike.
+RYT is a blazingly fast, memory-safe, and exceptionally reliable video downloader engineered with Rust's cutting-edge systems programming capabilities.
+
+## Why RYT?
+
+**🚀 Performance & Safety**
+- Delivers unparalleled performance through zero-cost abstractions and fearless concurrency
+- Ensures lightning-fast downloads without garbage collection overhead
+- Guaranteed memory safety with no segmentation faults
+
+**🏗️ Modern Architecture**
+- Built with asynchronous architecture for efficient I/O operations
+- Intuitive command-line interface with elegant progress visualization
+- Rock-solid stability across Linux, macOS, and Windows platforms
+
+**🛡️ Advanced Protection**
+- Intelligent Botguard protection mechanisms that bypass sophisticated anti-bot detection systems
+- Modular, well-tested codebase ensuring maintainability and extensibility
+- Perfect for power users and developers who demand reliability
 
 ## Features
 
