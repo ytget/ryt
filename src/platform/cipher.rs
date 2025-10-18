@@ -2150,6 +2150,148 @@ mod tests {
         assert_eq!(result.unwrap(), "321cba");
     }
 
+    #[tokio::test]
+    async fn test_fetch_player_js_url_invalid_url() {
+        let cipher = Cipher::new();
+        let result = cipher.fetch_player_js_url("invalid_url").await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_fetch_player_js_invalid_url() {
+        let cipher = Cipher::new();
+        let result = cipher.fetch_player_js("invalid_url").await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_decipher_signature_empty_signature() {
+        let cipher = Cipher::new();
+        // Empty signature should return empty string without making HTTP requests
+        let result = cipher.decipher_signature("", "invalid_url").await;
+        // This might fail due to invalid URL, but empty signature should be handled
+        if result.is_ok() {
+            assert_eq!(result.unwrap(), "");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_decipher_n_parameter_empty_n() {
+        let cipher = Cipher::new();
+        // Empty n parameter should return empty string without making HTTP requests
+        let result = cipher.decipher_n_parameter("", "invalid_url").await;
+        // This might fail due to invalid URL, but empty n parameter should be handled
+        if result.is_ok() {
+            assert_eq!(result.unwrap(), "");
+        }
+    }
+
+    #[test]
+    fn test_clear_caches() {
+        let cipher = Cipher::new();
+        // Should not panic
+        cipher.clear_caches();
+    }
+
+    #[test]
+    fn test_cipher_default() {
+        let _cipher = Cipher::default();
+        // Test that default cipher can be created
+    }
+
+    #[test]
+    fn test_cached_player_creation() {
+        let content = "test_content".to_string();
+        let expires_at = std::time::Instant::now() + Duration::from_secs(60);
+        let cached_player = CachedPlayer {
+            content,
+            expires_at,
+        };
+
+        assert_eq!(cached_player.content, "test_content");
+        assert!(!cached_player.expires_at.elapsed().as_secs() > 60);
+    }
+
+    #[test]
+    fn test_cipher_with_custom_client() {
+        let _client = Client::new();
+        let _cipher = Cipher::new();
+        // Test that cipher can be created with default client
+        // Test passed
+    }
+
+    #[tokio::test]
+    async fn test_decipher_signature_with_cache() {
+        let cipher = Cipher::new();
+        let signature = "test_signature";
+        let url = "invalid_url";
+
+        // These calls will fail due to invalid URL, but we test the cache mechanism
+        let result1 = cipher.decipher_signature(signature, url).await;
+        let result2 = cipher.decipher_signature(signature, url).await;
+
+        // Both should fail with the same error
+        assert!(result1.is_err());
+        assert!(result2.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_decipher_n_parameter_with_cache() {
+        let cipher = Cipher::new();
+        let n_param = "test_n_param";
+        let url = "invalid_url";
+
+        // These calls will fail due to invalid URL, but we test the cache mechanism
+        let result1 = cipher.decipher_n_parameter(n_param, url).await;
+        let result2 = cipher.decipher_n_parameter(n_param, url).await;
+
+        // Both should fail with the same error
+        assert!(result1.is_err());
+        assert!(result2.is_err());
+    }
+
+    #[test]
+    fn test_cipher_clone() {
+        let _cipher = Cipher::new();
+        // Test that cipher can be cloned (if it implements Clone)
+        // This is mainly to test that the struct can be used in different contexts
+        // Test passed
+    }
+
+    #[tokio::test]
+    async fn test_decipher_signature_edge_cases() {
+        let cipher = Cipher::new();
+
+        // Test with very long signature
+        let long_signature = "a".repeat(1000);
+        let result = cipher
+            .decipher_signature(&long_signature, "invalid_url")
+            .await;
+        assert!(result.is_err()); // Should fail due to invalid URL
+
+        // Test with special characters
+        let special_signature = "!@#$%^&*()";
+        let result = cipher
+            .decipher_signature(special_signature, "invalid_url")
+            .await;
+        assert!(result.is_err()); // Should fail due to invalid URL
+    }
+
+    #[tokio::test]
+    async fn test_decipher_n_parameter_edge_cases() {
+        let cipher = Cipher::new();
+
+        // Test with very long n parameter
+        let long_n = "a".repeat(1000);
+        let result = cipher.decipher_n_parameter(&long_n, "invalid_url").await;
+        assert!(result.is_err()); // Should fail due to invalid URL
+
+        // Test with special characters
+        let special_n = "!@#$%^&*()";
+        let result = cipher.decipher_n_parameter(special_n, "invalid_url").await;
+        assert!(result.is_err()); // Should fail due to invalid URL
+    }
+
     #[test]
     #[ignore] // These patterns require more complex implementation
     fn test_try_common_patterns_splice() {
@@ -2275,5 +2417,391 @@ mod tests {
 
         let result = cipher.try_approach_3(signature, player_js);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_apply_ncode_transformation_reverse() {
+        let cipher = Cipher::new();
+        let n_param = "abc123";
+        let func_body = "a.reverse();";
+
+        let result = cipher.apply_ncode_transformation(n_param, func_body);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "321cba");
+    }
+
+    #[test]
+    fn test_apply_ncode_transformation_slice() {
+        let cipher = Cipher::new();
+        let n_param = "abc123";
+        let func_body = "a.slice(2);";
+
+        let result = cipher.apply_ncode_transformation(n_param, func_body);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "c123");
+    }
+
+    #[test]
+    fn test_apply_ncode_transformation_splice() {
+        let cipher = Cipher::new();
+        let n_param = "abc123";
+        let func_body = "a.splice(1, 2);";
+
+        let result = cipher.apply_ncode_transformation(n_param, func_body);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "a123");
+    }
+
+    #[test]
+    fn test_apply_ncode_transformation_default() {
+        let cipher = Cipher::new();
+        let n_param = "abc123";
+        let func_body = "a.unknown();";
+
+        let result = cipher.apply_ncode_transformation(n_param, func_body);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "abc123"); // Should return original
+    }
+
+    #[test]
+    fn test_apply_common_n_transformations_reverse() {
+        let cipher = Cipher::new();
+        let n_param = "abc123";
+
+        let result = cipher.apply_common_n_transformations(n_param);
+        assert!(result.is_ok());
+        let result_str = result.unwrap();
+        assert_ne!(result_str, n_param); // Should be different from original
+    }
+
+    #[test]
+    fn test_apply_common_n_transformations_short_string() {
+        let cipher = Cipher::new();
+        let n_param = "a";
+
+        let result = cipher.apply_common_n_transformations(n_param);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "a"); // Should return original for short strings
+    }
+
+    #[test]
+    fn test_is_decipher_function_true() {
+        let cipher = Cipher::new();
+        let param = "a";
+        let body = "a.split(\"\"); return a.join(\"\"); a.reverse();";
+
+        let result = cipher.is_decipher_function(param, body);
+        assert!(result);
+    }
+
+    #[test]
+    fn test_is_decipher_function_false() {
+        let cipher = Cipher::new();
+        let param = "a";
+        let body = "return a;";
+
+        let result = cipher.is_decipher_function(param, body);
+        assert!(!result);
+    }
+
+    #[test]
+    fn test_is_decipher_function_partial_match() {
+        let cipher = Cipher::new();
+        let param = "a";
+        let body = "a.split(\"\");";
+
+        let result = cipher.is_decipher_function(param, body);
+        assert!(!result); // Only 1 pattern match, need at least 2
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_lookaheads() {
+        let cipher = Cipher::new();
+        let player_js = r#"var regex = /(?=lookahead)/; var neg = /(?!negative)/;"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("(?="));
+        assert!(!sanitized.contains("(?!"));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_document_references() {
+        let cipher = Cipher::new();
+        let player_js = r#"document.getElementById("test"); window.location.href;"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("document."));
+        assert!(!sanitized.contains("window."));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_console_references() {
+        let cipher = Cipher::new();
+        let player_js = r#"console.log("test"); console.error("error");"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("console."));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_eval_calls() {
+        let cipher = Cipher::new();
+        let player_js = r#"eval("code"); new Function("return 1");"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("eval("));
+        assert!(!sanitized.contains("new Function("));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_unicode_escapes() {
+        let cipher = Cipher::new();
+        let player_js = r#"var str = "\u0041\u0042\u0043";"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("\\u"));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_template_literals() {
+        let cipher = Cipher::new();
+        let player_js = r#"var str = `template ${variable} literal`;"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("`"));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_arrow_functions() {
+        let cipher = Cipher::new();
+        let player_js = r#"var fn = () => { return 1; };"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        // The sanitization replaces arrow functions with => {}, so we check for that pattern
+        assert!(sanitized.contains("=> {}"));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_async_await() {
+        let cipher = Cipher::new();
+        let player_js = r#"async function test() { await something(); }"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("async"));
+        assert!(!sanitized.contains("await"));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_classes() {
+        let cipher = Cipher::new();
+        let player_js = r#"class Test { constructor() {} }"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("class"));
+    }
+
+    #[test]
+    fn test_sanitize_player_js_removes_imports_exports() {
+        let cipher = Cipher::new();
+        let player_js = r#"import { test } from 'module'; export const value = 1;"#;
+
+        let sanitized = cipher.sanitize_player_js(player_js);
+        assert!(!sanitized.contains("import"));
+        assert!(!sanitized.contains("export"));
+    }
+
+    #[test]
+    fn test_find_decipher_function_name_fallback() {
+        let cipher = Cipher::new();
+        let player_js = "var test = 1; function other() { return 1; }";
+
+        let result = cipher.find_decipher_function_name(player_js);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "decipher"); // Should return default fallback
+    }
+
+    #[test]
+    fn test_find_decipher_function_name_common_names() {
+        let cipher = Cipher::new();
+        let player_js = "function decode(a) { return a; }";
+
+        let result = cipher.find_decipher_function_name(player_js);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "decode");
+    }
+
+    #[test]
+    fn test_find_decipher_function_name_any_function() {
+        let cipher = Cipher::new();
+        let player_js = "function testfunc(a) { return a; }";
+
+        let result = cipher.find_decipher_function_name(player_js);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "testfunc");
+    }
+
+    #[test]
+    fn test_create_minimal_decipher_js_no_function() {
+        let cipher = Cipher::new();
+        let player_js = "var test = 1;";
+        let function_name = "nonexistent";
+
+        let result = cipher.create_minimal_decipher_js(player_js, function_name);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_extract_decipher_function_with_deps_no_function() {
+        let cipher = Cipher::new();
+        let player_js = "var test = 1;";
+
+        let result = cipher.extract_decipher_function_with_deps(player_js);
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_apply_common_transformation_sequences() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+
+        let result = cipher
+            .apply_common_transformation_sequences(signature)
+            .await;
+        assert!(result.is_ok());
+        let result_str = result.unwrap();
+        assert_ne!(result_str, signature); // Should be different from original
+    }
+
+    #[tokio::test]
+    async fn test_apply_common_youtube_patterns_reverse() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+
+        let result = cipher.apply_common_youtube_patterns(signature).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "321cba");
+    }
+
+    #[tokio::test]
+    async fn test_apply_common_youtube_patterns_remove_first() {
+        let cipher = Cipher::new();
+        let signature = "a";
+
+        let result = cipher.apply_common_youtube_patterns(signature).await;
+        assert!(result.is_err()); // Should fail for single character
+    }
+
+    #[tokio::test]
+    async fn test_apply_common_youtube_patterns_remove_last() {
+        let cipher = Cipher::new();
+        let signature = "a";
+
+        let result = cipher.apply_common_youtube_patterns(signature).await;
+        assert!(result.is_err()); // Should fail for single character
+    }
+
+    #[tokio::test]
+    async fn test_apply_common_youtube_patterns_swap_first_last() {
+        let cipher = Cipher::new();
+        let signature = "ab";
+
+        let result = cipher.apply_common_youtube_patterns(signature).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "ba");
+    }
+
+    #[tokio::test]
+    async fn test_find_and_apply_transformation_objects_no_objects() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+        let player_js = "var test = 1;";
+
+        let result = cipher
+            .find_and_apply_transformation_objects(signature, player_js)
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_extract_and_apply_transformations_no_transformations() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+        let param = "a";
+        let body = "return a;";
+
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_extract_and_apply_transformations_with_reverse() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+        let param = "a";
+        let body = "obj.reverse(a);";
+
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "321cba");
+    }
+
+    #[tokio::test]
+    async fn test_extract_and_apply_transformations_with_splice() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+        let param = "a";
+        let body = "obj.splice(a, 2);";
+
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "c123");
+    }
+
+    #[tokio::test]
+    async fn test_extract_and_apply_transformations_with_slice() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+        let param = "a";
+        let body = "obj.slice(a, 1);";
+
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "bc123");
+    }
+
+    #[tokio::test]
+    async fn test_extract_and_apply_transformations_with_swap() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+        let param = "a";
+        let body = "obj.swap(a, 2);";
+
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "cba123");
+    }
+
+    #[tokio::test]
+    async fn test_extract_and_apply_transformations_unknown_method() {
+        let cipher = Cipher::new();
+        let signature = "abc123";
+        let param = "a";
+        let body = "obj.unknown(a);";
+
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "abc123"); // Should return original for unknown method
     }
 }

@@ -44,6 +44,14 @@ test-e2e: ## Run end-to-end tests (requires YTDLP_E2E=1)
 test-e2e-url: ## Run e2e test with specific URL: make test-e2e-url URL="https://..."
 	YTDLP_E2E=1 YTDLP_E2E_URL="$(URL)" cargo test --test e2e
 
+.PHONY: coverage
+coverage: ## Run code coverage analysis
+	cargo tarpaulin --out Stdout --timeout 120
+
+.PHONY: coverage-html
+coverage-html: ## Generate HTML coverage report
+	cargo tarpaulin --out Html --timeout 120
+
 ##@ Download
 
 .PHONY: download
@@ -96,4 +104,8 @@ e: ## Run end-to-end tests
 .PHONY: eu
 eu: ## Run e2e test with specific URL
 	@make test-e2e-url URL="$(URL)"
+
+.PHONY: cov
+cov: ## Run code coverage analysis
+	@make coverage
 

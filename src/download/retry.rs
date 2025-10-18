@@ -350,4 +350,139 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(counter.load(Ordering::SeqCst), 4); // 1 initial + 3 retries
     }
+
+    #[test]
+    fn test_retry_executor_default() {
+        let _executor = RetryExecutor::default();
+        // Test that default executor can be created
+        // If we get here, test passed
+    }
+
+    #[test]
+    fn test_retry_executor_with_config() {
+        let config = RetryConfig {
+            max_retries: 5,
+            initial_delay: Duration::from_millis(100),
+            max_delay: Duration::from_secs(60),
+            backoff_multiplier: 1.5,
+            jitter_factor: 0.2,
+        };
+        let _executor = RetryExecutor::with_config(config);
+        // Test that executor with custom config can be created
+        // If we get here, test passed
+    }
+
+    #[test]
+    fn test_retry_config_builder_jitter_clamping() {
+        let config = RetryConfigBuilder::new()
+            .jitter_factor(1.5) // Should be clamped to 1.0
+            .build();
+
+        assert_eq!(config.jitter_factor, 1.0);
+
+        let config = RetryConfigBuilder::new()
+            .jitter_factor(-0.5) // Should be clamped to 0.0
+            .build();
+
+        assert_eq!(config.jitter_factor, 0.0);
+    }
+
+    #[test]
+    fn test_retry_config_builder_default() {
+        let builder = RetryConfigBuilder::default();
+        let config = builder.build();
+
+        // Should have default values
+        assert_eq!(config.max_retries, 3);
+        assert_eq!(config.initial_delay, Duration::from_millis(200));
+        assert_eq!(config.max_delay, Duration::from_secs(30));
+        assert_eq!(config.backoff_multiplier, 2.0);
+        assert_eq!(config.jitter_factor, 0.1);
+    }
+
+    #[tokio::test]
+    async fn test_retry_executor_jitter_zero() {
+        let config = RetryConfig {
+            max_retries: 1,
+            initial_delay: Duration::from_millis(100),
+            max_delay: Duration::from_secs(30),
+            backoff_multiplier: 2.0,
+            jitter_factor: 0.0, // No jitter
+        };
+        let executor = RetryExecutor::with_config(config);
+        let counter = Arc::new(AtomicU32::new(0));
+
+        let result: Result<String, RytError> = executor
+            .execute({
+                let counter = counter.clone();
+                move || {
+                    let counter = counter.clone();
+                    Box::pin(async move {
+                        counter.fetch_add(1, Ordering::SeqCst);
+                        Err(RytError::TimeoutError("test error".to_string()))
+                    })
+                }
+            })
+            .await;
+
+        assert!(result.is_err());
+        assert_eq!(counter.load(Ordering::SeqCst), 2); // 1 initial + 1 retry
+    }
+
+    #[tokio::test]
+    async fn test_retry_executor_max_delay_cap() {
+        let config = RetryConfig {
+            max_retries: 2,
+            initial_delay: Duration::from_millis(100),
+            max_delay: Duration::from_millis(200), // Low max delay
+            backoff_multiplier: 10.0,              // High multiplier to exceed max delay
+            jitter_factor: 0.0,
+        };
+        let executor = RetryExecutor::with_config(config);
+        let counter = Arc::new(AtomicU32::new(0));
+
+        let result: Result<String, RytError> = executor
+            .execute({
+                let counter = counter.clone();
+                move || {
+                    let counter = counter.clone();
+                    Box::pin(async move {
+                        counter.fetch_add(1, Ordering::SeqCst);
+                        Err(RytError::TimeoutError("test error".to_string()))
+                    })
+                }
+            })
+            .await;
+
+        assert!(result.is_err());
+        assert_eq!(counter.load(Ordering::SeqCst), 3); // 1 initial + 2 retries
+    }
+
+    #[tokio::test]
+    async fn test_retry_executor_custom_error_handler_non_retryable() {
+        let executor = RetryExecutor::new();
+        let counter = Arc::new(AtomicU32::new(0));
+
+        let result: Result<String, RytError> = executor
+            .execute_with_error_handler(
+                {
+                    let counter = counter.clone();
+                    move || {
+                        let counter = counter.clone();
+                        Box::pin(async move {
+                            counter.fetch_add(1, Ordering::SeqCst);
+                            Err(RytError::VideoUnavailable) // Non-retryable error
+                        })
+                    }
+                },
+                |error| {
+                    // Only retry on timeout errors
+                    matches!(error, RytError::TimeoutError(_))
+                },
+            )
+            .await;
+
+        assert!(result.is_err());
+        assert_eq!(counter.load(Ordering::SeqCst), 1); // Only one attempt
+    }
 }

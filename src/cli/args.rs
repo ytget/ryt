@@ -105,7 +105,7 @@ pub struct Args {
 }
 
 /// Botguard mode
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum, PartialEq)]
 pub enum BotguardMode {
     /// Disabled
     Off,
@@ -116,7 +116,7 @@ pub enum BotguardMode {
 }
 
 /// Botguard cache mode
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum, PartialEq)]
 pub enum BotguardCacheMode {
     /// Memory cache
     Mem,
@@ -277,6 +277,171 @@ mod tests {
             ..Default::default()
         };
         assert!(args.is_playlist());
+    }
+
+    #[test]
+    fn test_args_timeout_duration() {
+        let args = Args {
+            timeout: humantime::Duration::from(Duration::from_secs(60)),
+            ..Default::default()
+        };
+        assert_eq!(args.timeout_duration(), Duration::from_secs(60));
+    }
+
+    #[test]
+    fn test_args_botguard_ttl_duration() {
+        let args = Args {
+            botguard_ttl: humantime::Duration::from(Duration::from_secs(3600)),
+            ..Default::default()
+        };
+        assert_eq!(args.botguard_ttl_duration(), Duration::from_secs(3600));
+    }
+
+    #[test]
+    fn test_args_parse_rate_limit() {
+        let args = Args {
+            rate_limit: Some("1MB/s".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(args.parse_rate_limit(), Some(1000 * 1000));
+
+        let args = Args {
+            rate_limit: None,
+            ..Default::default()
+        };
+        assert_eq!(args.parse_rate_limit(), None);
+    }
+
+    #[test]
+    fn test_parse_rate_limit_edge_cases() {
+        // Test various units
+        assert_eq!(parse_rate_limit("1B"), Some(1));
+        assert_eq!(parse_rate_limit("1KB"), Some(1000));
+        assert_eq!(parse_rate_limit("1KiB"), Some(1024));
+        assert_eq!(parse_rate_limit("1MB"), Some(1000 * 1000));
+        assert_eq!(parse_rate_limit("1MiB"), Some(1024 * 1024));
+        assert_eq!(parse_rate_limit("1GB"), Some(1000 * 1000 * 1000));
+        assert_eq!(parse_rate_limit("1GiB"), Some(1024 * 1024 * 1024));
+        assert_eq!(parse_rate_limit("1TB"), Some(1000_u64.pow(4)));
+        assert_eq!(parse_rate_limit("1TiB"), Some(1024_u64.pow(4)));
+
+        // Test decimal numbers
+        assert_eq!(parse_rate_limit("1.5MB"), Some(1500 * 1000));
+        assert_eq!(parse_rate_limit("0.5MB"), Some(500 * 1000));
+
+        // Test case insensitive
+        assert_eq!(parse_rate_limit("1mb/s"), Some(1000 * 1000));
+        assert_eq!(parse_rate_limit("1MB/S"), Some(1000 * 1000));
+
+        // Test whitespace
+        assert_eq!(parse_rate_limit(" 1MB/s "), Some(1000 * 1000));
+
+        // Test invalid cases
+        assert_eq!(parse_rate_limit("0MB"), None);
+        assert_eq!(parse_rate_limit("-1MB"), None);
+        assert_eq!(parse_rate_limit("invalid"), None);
+        assert_eq!(parse_rate_limit("1XB"), None);
+    }
+
+    #[test]
+    fn test_botguard_mode_variants() {
+        // Test that variants can be created and compared
+        assert_eq!(BotguardMode::Off, BotguardMode::Off);
+        assert_eq!(BotguardMode::Auto, BotguardMode::Auto);
+        assert_eq!(BotguardMode::Force, BotguardMode::Force);
+    }
+
+    #[test]
+    fn test_botguard_cache_mode_variants() {
+        // Test that variants can be created and compared
+        assert_eq!(BotguardCacheMode::Mem, BotguardCacheMode::Mem);
+        assert_eq!(BotguardCacheMode::File, BotguardCacheMode::File);
+    }
+
+    #[test]
+    fn test_verbosity_level_variants() {
+        assert_eq!(VerbosityLevel::Quiet, VerbosityLevel::Quiet);
+        assert_eq!(VerbosityLevel::Normal, VerbosityLevel::Normal);
+        assert_eq!(VerbosityLevel::Verbose, VerbosityLevel::Verbose);
+    }
+
+    #[test]
+    fn test_args_default_values() {
+        let args = Args::default();
+        assert_eq!(args.url, "");
+        assert_eq!(args.format, None);
+        assert_eq!(args.ext, None);
+        assert_eq!(args.output, None);
+        assert!(!args.no_progress);
+        assert_eq!(args.retries, 3);
+        assert_eq!(args.rate_limit, None);
+        assert!(!args.playlist);
+        assert_eq!(args.limit, 0);
+        assert_eq!(args.concurrency, 1);
+        assert_eq!(args.botguard, BotguardMode::Off);
+        assert!(!args.debug_botguard);
+        assert_eq!(args.botguard_cache, BotguardCacheMode::Mem);
+        assert_eq!(args.botguard_cache_dir, None);
+        assert_eq!(args.botguard_script, None);
+        assert_eq!(args.client_name, None);
+        assert_eq!(args.client_version, None);
+        assert!(!args.print_url);
+        assert_eq!(args.user_agent, None);
+        assert_eq!(args.proxy, None);
+        assert!(!args.verbose);
+        assert!(!args.quiet);
+    }
+
+    #[test]
+    fn test_args_custom_values() {
+        let args = Args {
+            url: "https://example.com".to_string(),
+            format: Some("best".to_string()),
+            ext: Some("mp4".to_string()),
+            output: Some(PathBuf::from("/tmp")),
+            no_progress: true,
+            retries: 5,
+            rate_limit: Some("2MB/s".to_string()),
+            playlist: true,
+            limit: 10,
+            concurrency: 3,
+            botguard: BotguardMode::Auto,
+            debug_botguard: true,
+            botguard_cache: BotguardCacheMode::File,
+            botguard_cache_dir: Some(PathBuf::from("/cache")),
+            botguard_script: Some(PathBuf::from("/script.js")),
+            client_name: Some("CHROME".to_string()),
+            client_version: Some("1.0.0".to_string()),
+            print_url: true,
+            user_agent: Some("Custom Agent".to_string()),
+            proxy: Some("http://proxy:8080".to_string()),
+            verbose: true,
+            quiet: false,
+            ..Default::default()
+        };
+
+        assert_eq!(args.url, "https://example.com");
+        assert_eq!(args.format, Some("best".to_string()));
+        assert_eq!(args.ext, Some("mp4".to_string()));
+        assert_eq!(args.output, Some(PathBuf::from("/tmp")));
+        assert!(args.no_progress);
+        assert_eq!(args.retries, 5);
+        assert_eq!(args.rate_limit, Some("2MB/s".to_string()));
+        assert!(args.playlist);
+        assert_eq!(args.limit, 10);
+        assert_eq!(args.concurrency, 3);
+        assert_eq!(args.botguard, BotguardMode::Auto);
+        assert!(args.debug_botguard);
+        assert_eq!(args.botguard_cache, BotguardCacheMode::File);
+        assert_eq!(args.botguard_cache_dir, Some(PathBuf::from("/cache")));
+        assert_eq!(args.botguard_script, Some(PathBuf::from("/script.js")));
+        assert_eq!(args.client_name, Some("CHROME".to_string()));
+        assert_eq!(args.client_version, Some("1.0.0".to_string()));
+        assert!(args.print_url);
+        assert_eq!(args.user_agent, Some("Custom Agent".to_string()));
+        assert_eq!(args.proxy, Some("http://proxy:8080".to_string()));
+        assert!(args.verbose);
+        assert!(!args.quiet);
     }
 }
 

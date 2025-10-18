@@ -785,4 +785,189 @@ mod tests {
         );
         assert!(downloader.botguard.debug);
     }
+
+    #[test]
+    fn test_download_options_default() {
+        let options = DownloadOptions::default();
+        assert_eq!(options.client_name, "ANDROID");
+        assert_eq!(options.client_version, "20.10.38");
+        assert_eq!(options.timeout, Duration::from_secs(30));
+        assert_eq!(options.max_retries, 3);
+        assert!(options.format_selector.is_none());
+        assert!(options.desired_ext.is_none());
+        assert!(options.output_path.is_none());
+        assert!(options.rate_limit_bps.is_none());
+    }
+
+    #[test]
+    fn test_botguard_config_default() {
+        let config = BotguardConfig::default();
+        assert_eq!(config.mode, crate::platform::botguard::BotguardMode::Off);
+        assert!(!config.debug);
+        assert_eq!(config.ttl, Duration::from_secs(1800));
+    }
+
+    #[test]
+    fn test_downloader_default() {
+        let downloader = Downloader::default();
+        assert_eq!(downloader.options.client_name, "ANDROID");
+        assert_eq!(downloader.options.client_version, "20.10.38");
+    }
+
+    #[test]
+    fn test_downloader_with_output_path() {
+        let downloader = Downloader::new().with_output_path("/tmp/test.mp4");
+        assert!(downloader.options.output_path.is_some());
+        assert_eq!(
+            downloader.options.output_path.unwrap(),
+            PathBuf::from("/tmp/test.mp4")
+        );
+    }
+
+    #[test]
+    fn test_downloader_with_progress() {
+        let downloader = Downloader::new().with_progress(|_progress| {
+            // Test callback
+        });
+        // Test that with_progress doesn't panic and returns self
+        assert_eq!(downloader.options.client_name, "ANDROID");
+    }
+
+    #[test]
+    fn test_downloader_with_rate_limit() {
+        let downloader = Downloader::new().with_rate_limit(2048);
+        assert_eq!(downloader.options.rate_limit_bps, Some(2048));
+    }
+
+    #[test]
+    fn test_downloader_with_innertube_client() {
+        let downloader = Downloader::new().with_innertube_client("IOS", "19.29.1");
+        assert_eq!(downloader.options.client_name, "IOS");
+        assert_eq!(downloader.options.client_version, "19.29.1");
+    }
+
+    #[test]
+    fn test_downloader_with_botguard_mode() {
+        let downloader =
+            Downloader::new().with_botguard(crate::platform::botguard::BotguardMode::Force);
+        assert_eq!(
+            downloader.botguard.mode,
+            crate::platform::botguard::BotguardMode::Force
+        );
+    }
+
+    #[test]
+    fn test_downloader_with_botguard_debug() {
+        let downloader = Downloader::new().with_botguard_debug(true);
+        assert!(downloader.botguard.debug);
+    }
+
+    #[test]
+    fn test_downloader_with_botguard_ttl() {
+        let downloader = Downloader::new().with_botguard_ttl(Duration::from_secs(3600));
+        assert_eq!(downloader.botguard.ttl, Duration::from_secs(3600));
+    }
+
+    #[test]
+    fn test_downloader_with_timeout() {
+        let downloader = Downloader::new().with_timeout(Duration::from_secs(60));
+        assert_eq!(downloader.options.timeout, Duration::from_secs(60));
+    }
+
+    #[test]
+    fn test_downloader_with_max_retries() {
+        let downloader = Downloader::new().with_max_retries(5);
+        assert_eq!(downloader.options.max_retries, 5);
+    }
+
+    #[test]
+    fn test_downloader_with_format_best() {
+        let downloader = Downloader::new().with_format("best", "mp4");
+        assert!(downloader.options.format_selector.is_some());
+        let selector = downloader.options.format_selector.unwrap();
+        assert_eq!(selector.quality, QualitySelector::Best);
+        assert_eq!(selector.extension, Some("mp4".to_string()));
+    }
+
+    #[test]
+    fn test_downloader_with_format_worst() {
+        let downloader = Downloader::new().with_format("worst", "webm");
+        assert!(downloader.options.format_selector.is_some());
+        let selector = downloader.options.format_selector.unwrap();
+        assert_eq!(selector.quality, QualitySelector::Worst);
+        assert_eq!(selector.extension, Some("webm".to_string()));
+    }
+
+    #[test]
+    fn test_downloader_with_format_itag() {
+        let downloader = Downloader::new().with_format("itag=18", "mp4");
+        assert!(downloader.options.format_selector.is_some());
+        let selector = downloader.options.format_selector.unwrap();
+        assert_eq!(selector.quality, QualitySelector::Itag(18));
+        assert_eq!(selector.extension, Some("mp4".to_string()));
+    }
+
+    #[test]
+    fn test_downloader_with_format_height() {
+        let downloader = Downloader::new().with_format("height=720", "mp4");
+        assert!(downloader.options.format_selector.is_some());
+        let selector = downloader.options.format_selector.unwrap();
+        assert_eq!(selector.quality, QualitySelector::Height(720));
+        assert_eq!(selector.extension, Some("mp4".to_string()));
+    }
+
+    #[test]
+    fn test_downloader_with_format_height_le() {
+        let downloader = Downloader::new().with_format("height<=720", "mp4");
+        assert!(downloader.options.format_selector.is_some());
+        let selector = downloader.options.format_selector.unwrap();
+        assert_eq!(selector.quality, QualitySelector::HeightLessOrEqual(720));
+        assert_eq!(selector.extension, Some("mp4".to_string()));
+    }
+
+    #[test]
+    fn test_downloader_with_format_height_ge() {
+        let downloader = Downloader::new().with_format("height>=720", "mp4");
+        assert!(downloader.options.format_selector.is_some());
+        let selector = downloader.options.format_selector.unwrap();
+        assert_eq!(selector.quality, QualitySelector::HeightGreaterOrEqual(720));
+        assert_eq!(selector.extension, Some("mp4".to_string()));
+    }
+
+    #[test]
+    fn test_downloader_with_format_invalid() {
+        let downloader = Downloader::new().with_format("invalid", "mp4");
+        // Invalid format should not set format_selector
+        assert!(downloader.options.format_selector.is_none());
+    }
+
+    #[test]
+    fn test_downloader_chaining() {
+        let downloader = Downloader::new()
+            .with_format("best", "mp4")
+            .with_output_path("/tmp")
+            .with_rate_limit(1024)
+            .with_timeout(Duration::from_secs(60))
+            .with_max_retries(5)
+            .with_botguard(crate::platform::botguard::BotguardMode::Auto)
+            .with_botguard_debug(true);
+
+        assert!(downloader.options.format_selector.is_some());
+        assert!(downloader.options.output_path.is_some());
+        assert_eq!(downloader.options.rate_limit_bps, Some(1024));
+        assert_eq!(downloader.options.timeout, Duration::from_secs(60));
+        assert_eq!(downloader.options.max_retries, 5);
+        assert_eq!(
+            downloader.botguard.mode,
+            crate::platform::botguard::BotguardMode::Auto
+        );
+        assert!(downloader.botguard.debug);
+    }
+
+    #[test]
+    fn test_downloader_with_innertube_client_empty() {
+        let downloader = Downloader::new().with_innertube_client("", "");
+        assert_eq!(downloader.options.client_name, "");
+        assert_eq!(downloader.options.client_version, "");
+    }
 }

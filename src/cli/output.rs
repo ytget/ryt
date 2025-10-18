@@ -302,4 +302,242 @@ mod tests {
         // Error should always print
         formatter.error("test");
     }
+
+    #[test]
+    fn test_output_formatter_verbosity_levels() {
+        // Test Normal verbosity
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        assert_eq!(formatter.verbosity, VerbosityLevel::Normal);
+
+        // Test Verbose verbosity
+        let formatter = OutputFormatter::new(VerbosityLevel::Verbose);
+        assert_eq!(formatter.verbosity, VerbosityLevel::Verbose);
+
+        // Test Quiet verbosity
+        let formatter = OutputFormatter::new(VerbosityLevel::Quiet);
+        assert_eq!(formatter.verbosity, VerbosityLevel::Quiet);
+    }
+
+    #[test]
+    fn test_create_progress_bar_quiet_mode() {
+        let mut formatter = OutputFormatter::new(VerbosityLevel::Quiet);
+        let progress_bar = formatter.create_progress_bar(1000);
+        assert!(progress_bar.is_none());
+    }
+
+    #[test]
+    fn test_create_progress_bar_normal_mode() {
+        let mut formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        let progress_bar = formatter.create_progress_bar(1000);
+        assert!(progress_bar.is_some());
+        assert!(formatter.progress_bar.is_some());
+    }
+
+    #[test]
+    fn test_create_progress_bar_verbose_mode() {
+        let mut formatter = OutputFormatter::new(VerbosityLevel::Verbose);
+        let progress_bar = formatter.create_progress_bar(1000);
+        assert!(progress_bar.is_some());
+        assert!(formatter.progress_bar.is_some());
+    }
+
+    #[test]
+    fn test_format_bytes_edge_cases() {
+        assert_eq!(format_bytes(0), "0 B");
+        assert_eq!(format_bytes(1), "1 B");
+        assert_eq!(format_bytes(999), "999 B");
+        assert_eq!(format_bytes(1000), "1000 B");
+        assert_eq!(format_bytes(1023), "1023 B");
+        assert_eq!(format_bytes(1024), "1.0 KB");
+        assert_eq!(format_bytes(1025), "1.0 KB");
+        assert_eq!(format_bytes(1536), "1.5 KB");
+        assert_eq!(format_bytes(1048575), "1024.0 KB");
+        assert_eq!(format_bytes(1048576), "1.0 MB");
+        assert_eq!(format_bytes(1073741824), "1.0 GB");
+        assert_eq!(format_bytes(1099511627776), "1.0 TB");
+    }
+
+    #[test]
+    fn test_format_duration_edge_cases() {
+        // Test seconds
+        assert_eq!(format_duration(Duration::from_secs(0)), "0s");
+        assert_eq!(format_duration(Duration::from_secs(1)), "1s");
+        assert_eq!(format_duration(Duration::from_secs(59)), "59s");
+
+        // Test minutes
+        assert_eq!(format_duration(Duration::from_secs(60)), "1m");
+        assert_eq!(format_duration(Duration::from_secs(61)), "1m 1s");
+        assert_eq!(format_duration(Duration::from_secs(120)), "2m");
+        assert_eq!(format_duration(Duration::from_secs(3599)), "59m 59s");
+
+        // Test hours
+        assert_eq!(format_duration(Duration::from_secs(3600)), "1h");
+        assert_eq!(format_duration(Duration::from_secs(3601)), "1h");
+        assert_eq!(format_duration(Duration::from_secs(3660)), "1h 1m");
+        assert_eq!(format_duration(Duration::from_secs(3661)), "1h 1m");
+        assert_eq!(format_duration(Duration::from_secs(7200)), "2h");
+        assert_eq!(format_duration(Duration::from_secs(7260)), "2h 1m");
+    }
+
+    #[test]
+    fn test_print_video_info_quiet_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Quiet);
+        // Should not panic or print anything
+        formatter.print_video_info("Test Video", "Test Author", 120, 5);
+    }
+
+    #[test]
+    fn test_print_video_info_normal_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_video_info("Test Video", "Test Author", 120, 5);
+    }
+
+    #[test]
+    fn test_print_format_info_quiet_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Quiet);
+        // Should not panic or print anything
+        formatter.print_format_info(22, "720p", "video/mp4", 1000000, Some(50000000));
+    }
+
+    #[test]
+    fn test_print_format_info_normal_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_format_info(22, "720p", "video/mp4", 1000000, Some(50000000));
+    }
+
+    #[test]
+    fn test_print_format_info_without_size() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_format_info(22, "720p", "video/mp4", 1000000, None);
+    }
+
+    #[test]
+    fn test_print_download_start_quiet_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Quiet);
+        // Should not panic or print anything
+        formatter.print_download_start("https://example.com", "/tmp/video.mp4");
+    }
+
+    #[test]
+    fn test_print_download_start_normal_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_download_start("https://example.com", "/tmp/video.mp4");
+    }
+
+    #[test]
+    fn test_print_download_complete_quiet_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Quiet);
+        // Should not panic or print anything
+        formatter.print_download_complete("/tmp/video.mp4", Duration::from_secs(30));
+    }
+
+    #[test]
+    fn test_print_download_complete_normal_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_download_complete("/tmp/video.mp4", Duration::from_secs(30));
+    }
+
+    #[test]
+    fn test_print_playlist_info_quiet_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Quiet);
+        // Should not panic or print anything
+        formatter.print_playlist_info("PLxxxx", 10, None);
+        formatter.print_playlist_info("PLxxxx", 10, Some(5));
+    }
+
+    #[test]
+    fn test_print_playlist_info_normal_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_playlist_info("PLxxxx", 10, None);
+        formatter.print_playlist_info("PLxxxx", 10, Some(5));
+    }
+
+    #[test]
+    fn test_print_playlist_item_quiet_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Quiet);
+        // Should not panic or print anything
+        formatter.print_playlist_item(0, 10, "Test Video");
+    }
+
+    #[test]
+    fn test_print_playlist_item_normal_mode() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_playlist_item(0, 10, "Test Video");
+    }
+
+    #[test]
+    fn test_print_help() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_help();
+    }
+
+    #[test]
+    fn test_print_version() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        // Should not panic
+        formatter.print_version();
+    }
+
+    #[test]
+    fn test_create_progress_callback() {
+        let formatter = Arc::new(OutputFormatter::new(VerbosityLevel::Normal));
+        let callback = create_progress_callback(formatter);
+
+        // Create a test progress
+        let mut progress = Progress::new(1000);
+        progress.update(500);
+
+        // Should not panic
+        callback(progress);
+    }
+
+    #[test]
+    fn test_update_progress_with_speed() {
+        let mut formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        let _progress_bar = formatter.create_progress_bar(1000);
+
+        let mut progress = Progress::new(1000);
+        progress.update(500);
+        // Speed is calculated automatically in update method
+
+        // Should not panic
+        formatter.update_progress(&progress);
+    }
+
+    #[test]
+    fn test_update_progress_without_speed() {
+        let mut formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        let _progress_bar = formatter.create_progress_bar(1000);
+
+        let mut progress = Progress::new(1000);
+        progress.update(500);
+
+        // Should not panic
+        formatter.update_progress(&progress);
+    }
+
+    #[test]
+    fn test_finish_progress() {
+        let mut formatter = OutputFormatter::new(VerbosityLevel::Normal);
+        let _progress_bar = formatter.create_progress_bar(1000);
+
+        // Should not panic
+        formatter.finish_progress("Download completed!");
+    }
+
+    #[test]
+    fn test_finish_progress_no_bar() {
+        let formatter = OutputFormatter::new(VerbosityLevel::Normal);
+
+        // Should not panic even without progress bar
+        formatter.finish_progress("Download completed!");
+    }
 }
