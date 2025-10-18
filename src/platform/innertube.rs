@@ -641,7 +641,7 @@ mod tests {
     fn test_innertube_client_with_client() {
         let client = InnerTubeClient::new()
             .with_client("WEB", "2.20251002.00.00");
-        
+
         assert_eq!(client.client_name, "WEB");
         assert_eq!(client.client_version, "2.20251002.00.00");
     }
@@ -675,30 +675,34 @@ mod tests {
     }
 
     #[test]
-    fn test_format_deserialization() {
+    fn test_format_data_deserialization() {
         let json = r#"{
             "itag": 22,
             "url": "https://example.com/video.mp4",
-            "quality": "hd720",
-            "mime_type": "video/mp4",
+            "mimeType": "video/mp4",
             "bitrate": 1000000,
             "fps": 30,
             "width": 1280,
-            "height": 720
+            "height": 720,
+            "qualityLabel": "720p",
+            "audioCodec": "aac",
+            "videoCodec": "avc1"
         }"#;
-        
-        let format: Result<Format, _> = serde_json::from_str(json);
+
+        let format: Result<FormatData, _> = serde_json::from_str(json);
         assert!(format.is_ok());
-        
+
         let format = format.unwrap();
         assert_eq!(format.itag, 22);
-        assert_eq!(format.url, "https://example.com/video.mp4");
-        assert_eq!(format.quality, "hd720");
+        assert_eq!(format.url, Some("https://example.com/video.mp4".to_string()));
         assert_eq!(format.mime_type, "video/mp4");
-        assert_eq!(format.bitrate, 1000000);
+        assert_eq!(format.bitrate, Some(1000000));
         assert_eq!(format.fps, Some(30));
         assert_eq!(format.width, Some(1280));
         assert_eq!(format.height, Some(720));
+        assert_eq!(format.quality_label, Some("720p".to_string()));
+        assert_eq!(format.audio_codec, Some("aac".to_string()));
+        assert_eq!(format.video_codec, Some("avc1".to_string()));
     }
 
     #[test]
@@ -729,5 +733,327 @@ mod tests {
         assert_eq!(thumbnail.thumbnails[0].url, "https://example.com/thumb.jpg");
         assert_eq!(thumbnail.thumbnails[0].width, 320);
         assert_eq!(thumbnail.thumbnails[0].height, 180);
+    }
+
+    #[test]
+    fn test_player_response_deserialization() {
+        let json = r#"{
+            "videoDetails": {
+                "videoId": "dQw4w9WgXcQ",
+                "title": "Test Video",
+                "lengthSeconds": "212",
+                "author": "Test Author",
+                "shortDescription": "Test description",
+                "thumbnail": {
+                    "thumbnails": [
+                        {
+                            "url": "https://example.com/thumb.jpg",
+                            "width": 120,
+                            "height": 90
+                        }
+                    ]
+                }
+            },
+            "streamingData": {
+                "formats": [
+                    {
+                        "itag": 22,
+                        "url": "https://example.com/video.mp4",
+                        "mimeType": "video/mp4",
+                        "bitrate": 1000000,
+                        "fps": 30,
+                        "width": 1280,
+                        "height": 720
+                    }
+                ]
+            }
+        }"#;
+
+        let response: Result<PlayerResponse, _> = serde_json::from_str(json);
+        assert!(response.is_ok());
+
+        let response = response.unwrap();
+        assert!(response.video_details.is_some());
+        let video_details = response.video_details.unwrap();
+        assert_eq!(video_details.video_id, "dQw4w9WgXcQ");
+        assert_eq!(video_details.title, "Test Video");
+        assert_eq!(video_details.length_seconds, "212");
+        assert_eq!(video_details.author, "Test Author");
+        
+        assert!(response.streaming_data.is_some());
+        let streaming_data = response.streaming_data.unwrap();
+        assert!(streaming_data.formats.is_some());
+        let formats = streaming_data.formats.unwrap();
+        assert_eq!(formats.len(), 1);
+        assert_eq!(formats[0].itag, 22);
+    }
+
+    #[test]
+    fn test_video_details_deserialization() {
+        let json = r#"{
+            "videoId": "dQw4w9WgXcQ",
+            "title": "Test Video",
+            "lengthSeconds": "212",
+            "author": "Test Author",
+            "shortDescription": "Test description",
+            "thumbnail": {
+                "thumbnails": [
+                    {
+                        "url": "https://example.com/thumb.jpg",
+                        "width": 120,
+                        "height": 90
+                    }
+                ]
+            }
+        }"#;
+
+        let details: Result<VideoDetails, _> = serde_json::from_str(json);
+        assert!(details.is_ok());
+
+        let details = details.unwrap();
+        assert_eq!(details.video_id, "dQw4w9WgXcQ");
+        assert_eq!(details.title, "Test Video");
+        assert_eq!(details.length_seconds, "212");
+        assert_eq!(details.author, "Test Author");
+        assert_eq!(details.short_description, "Test description");
+        assert_eq!(details.thumbnail.thumbnails.len(), 1);
+    }
+
+    #[test]
+    fn test_streaming_data_deserialization() {
+        let json = r#"{
+            "formats": [
+                {
+                    "itag": 22,
+                    "url": "https://example.com/video.mp4",
+                    "quality": "hd720",
+                    "mimeType": "video/mp4",
+                    "bitrate": 1000000,
+                    "fps": 30,
+                    "width": 1280,
+                    "height": 720
+                },
+                {
+                    "itag": 18,
+                    "url": "https://example.com/video2.mp4",
+                    "quality": "medium",
+                    "mimeType": "video/mp4",
+                    "bitrate": 500000,
+                    "fps": 30,
+                    "width": 640,
+                    "height": 360
+                }
+            ]
+        }"#;
+
+        let streaming_data: Result<StreamingData, _> = serde_json::from_str(json);
+        assert!(streaming_data.is_ok());
+
+        let streaming_data = streaming_data.unwrap();
+        assert!(streaming_data.formats.is_some());
+        let formats = streaming_data.formats.unwrap();
+        assert_eq!(formats.len(), 2);
+        assert_eq!(formats[0].itag, 22);
+        assert_eq!(formats[1].itag, 18);
+    }
+
+    #[test]
+    fn test_innertube_client_methods() {
+        let client = InnerTubeClient::new();
+        
+        // Test client properties
+        assert_eq!(client.client_name, "ANDROID");
+        assert_eq!(client.client_version, "20.10.38");
+        assert!(client.api_key.is_none());
+        assert!(client.visitor_id.is_none());
+        
+        // Test with API key
+        let client_with_key = InnerTubeClient::new()
+            .with_client("TEST_CLIENT", "1.0.0");
+        assert_eq!(client_with_key.client_name, "TEST_CLIENT");
+        assert_eq!(client_with_key.client_version, "1.0.0");
+        
+        // Test with visitor ID
+        let client_with_visitor = InnerTubeClient::new()
+            .with_visitor_id("test_visitor_id");
+        assert_eq!(client_with_visitor.visitor_id, Some("test_visitor_id".to_string()));
+    }
+
+
+
+
+    #[test]
+    fn test_thumbnail_info_deserialization() {
+        let json = r#"{
+            "url": "https://example.com/thumb.jpg",
+            "width": 120,
+            "height": 90
+        }"#;
+
+        let thumbnail_info: Result<ThumbnailInfo, _> = serde_json::from_str(json);
+        assert!(thumbnail_info.is_ok());
+
+        let thumbnail_info = thumbnail_info.unwrap();
+        assert_eq!(thumbnail_info.url, "https://example.com/thumb.jpg");
+        assert_eq!(thumbnail_info.width, 120);
+        assert_eq!(thumbnail_info.height, 90);
+    }
+
+    #[test]
+    fn test_format_data_deserialization_edge_cases() {
+        // Test with minimal format data
+        let json = r#"{
+            "itag": 22,
+            "mimeType": "video/mp4"
+        }"#;
+
+        let format: Result<FormatData, _> = serde_json::from_str(json);
+        assert!(format.is_ok());
+
+        let format = format.unwrap();
+        assert_eq!(format.itag, 22);
+        assert_eq!(format.url, None);
+        assert_eq!(format.mime_type, "video/mp4");
+        assert_eq!(format.bitrate, None);
+    }
+
+    #[test]
+    fn test_format_data_deserialization_with_all_fields() {
+        let json = r#"{
+            "itag": 137,
+            "url": "https://example.com/video.mp4",
+            "mimeType": "video/mp4",
+            "bitrate": 5000000,
+            "fps": 60,
+            "width": 1920,
+            "height": 1080,
+            "qualityLabel": "1080p",
+            "contentLength": "1000000",
+            "signatureCipher": "test_cipher",
+            "audioCodec": "aac",
+            "videoCodec": "avc1",
+            "audioSampleRate": 48000,
+            "audioChannels": 2
+        }"#;
+
+        let format: Result<FormatData, _> = serde_json::from_str(json);
+        assert!(format.is_ok());
+
+        let format = format.unwrap();
+        assert_eq!(format.itag, 137);
+        assert_eq!(format.url, Some("https://example.com/video.mp4".to_string()));
+        assert_eq!(format.mime_type, "video/mp4");
+        assert_eq!(format.bitrate, Some(5000000));
+        assert_eq!(format.fps, Some(60));
+        assert_eq!(format.width, Some(1920));
+        assert_eq!(format.height, Some(1080));
+        assert_eq!(format.quality_label, Some("1080p".to_string()));
+        assert_eq!(format.content_length, Some("1000000".to_string()));
+        assert_eq!(format.signature_cipher, Some("test_cipher".to_string()));
+        assert_eq!(format.audio_codec, Some("aac".to_string()));
+        assert_eq!(format.video_codec, Some("avc1".to_string()));
+    }
+
+    #[test]
+    fn test_innertube_client_default_values() {
+        let client = InnerTubeClient::new();
+        
+        // Test default values
+        assert_eq!(client.client_name, "ANDROID");
+        assert_eq!(client.client_version, "20.10.38");
+        assert!(client.api_key.is_none());
+        assert!(client.visitor_id.is_none());
+    }
+
+    #[test]
+    fn test_innertube_client_with_empty_visitor_id() {
+        let client = InnerTubeClient::new()
+            .with_visitor_id("");
+        assert_eq!(client.visitor_id, Some("".to_string()));
+    }
+
+    #[test]
+    fn test_innertube_client_with_empty_client_name() {
+        let client = InnerTubeClient::new()
+            .with_client("", "");
+        assert_eq!(client.client_name, "");
+        assert_eq!(client.client_version, "");
+    }
+
+    #[test]
+    fn test_innertube_client_with_long_visitor_id() {
+        let long_id = "a".repeat(1000);
+        let client = InnerTubeClient::new()
+            .with_visitor_id(&long_id);
+        assert_eq!(client.visitor_id, Some(long_id));
+    }
+
+    #[test]
+    fn test_innertube_client_with_special_characters() {
+        let client = InnerTubeClient::new()
+            .with_client("WEB_EMBEDDED_PLAYER", "1.20231201.00.00")
+            .with_visitor_id("visitor-123_456@test.com");
+        
+        assert_eq!(client.client_name, "WEB_EMBEDDED_PLAYER");
+        assert_eq!(client.client_version, "1.20231201.00.00");
+        assert_eq!(client.visitor_id, Some("visitor-123_456@test.com".to_string()));
+    }
+
+    #[test]
+    fn test_innertube_client_multiple_with_calls() {
+        let client = InnerTubeClient::new()
+            .with_client("IOS", "19.29.1")
+            .with_visitor_id("first_visitor")
+            .with_client("ANDROID", "20.10.38") // Override previous
+            .with_visitor_id("second_visitor"); // Override previous
+        
+        assert_eq!(client.client_name, "ANDROID");
+        assert_eq!(client.client_version, "20.10.38");
+        assert_eq!(client.visitor_id, Some("second_visitor".to_string()));
+    }
+
+    #[test]
+    fn test_innertube_client_edge_cases() {
+        // Test with very long strings
+        let long_name = "a".repeat(1000);
+        let long_version = "b".repeat(1000);
+        let long_visitor = "c".repeat(1000);
+        
+        let client = InnerTubeClient::new()
+            .with_client(&long_name, &long_version)
+            .with_visitor_id(&long_visitor);
+        
+        assert_eq!(client.client_name, long_name);
+        assert_eq!(client.client_version, long_version);
+        assert_eq!(client.visitor_id, Some(long_visitor));
+    }
+
+    #[test]
+    fn test_innertube_client_unicode_support() {
+        let client = InnerTubeClient::new()
+            .with_client("客户端", "版本1.0")
+            .with_visitor_id("访问者123");
+        
+        assert_eq!(client.client_name, "客户端");
+        assert_eq!(client.client_version, "版本1.0");
+        assert_eq!(client.visitor_id, Some("访问者123".to_string()));
+    }
+
+    #[test]
+    fn test_innertube_client_switch_client_for_different_errors() {
+        let mut client = InnerTubeClient::new();
+        
+        // Test with different error types
+        let timeout_error = RytError::TimeoutError("timeout".to_string());
+        client.switch_client_for_error(&timeout_error);
+        
+        let geo_error = RytError::GeoBlocked;
+        client.switch_client_for_error(&geo_error);
+        
+        let rate_error = RytError::RateLimited;
+        client.switch_client_for_error(&rate_error);
+        
+        // Should not panic
+        assert_eq!(client.client_name, "ANDROID");
     }
 }

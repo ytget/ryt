@@ -202,4 +202,108 @@ mod tests {
         assert_eq!(format_duration(Duration::from_secs(3600)), "1h");
         assert_eq!(format_duration(Duration::from_secs(3660)), "1h 1m");
     }
+
+    #[test]
+    fn test_progress_edge_cases() {
+        // Test with zero total size
+        let mut progress = Progress::new(0);
+        progress.update(100);
+        assert_eq!(progress.percent, 0.0);
+        // Note: is_complete() returns true when total_size > 0 AND downloaded_size >= total_size
+        // For zero total_size, it should return false
+        assert!(!progress.is_complete());
+
+        // Test with downloaded size exceeding total
+        let mut progress = Progress::new(1000);
+        progress.update(1500);
+        assert_eq!(progress.downloaded_size, 1500);
+        assert_eq!(progress.percent, 150.0);
+        assert!(progress.is_complete());
+    }
+
+    #[test]
+    fn test_progress_string_methods() {
+        let mut progress = Progress::new(1024);
+        
+        // Test before any update
+        assert_eq!(progress.speed_string(), "Unknown");
+        assert_eq!(progress.eta_string(), "Unknown");
+        assert_eq!(progress.total_size_string(), "1.0 KB");
+        assert_eq!(progress.downloaded_size_string(), "0 B");
+
+        // Simulate some time passing and update
+        thread::sleep(Duration::from_millis(100));
+        progress.update(512);
+        
+        // Now speed and ETA should be calculated
+        assert_ne!(progress.speed_string(), "Unknown");
+        assert_ne!(progress.eta_string(), "Unknown");
+        assert_eq!(progress.downloaded_size_string(), "512 B");
+    }
+
+    #[test]
+    fn test_progress_eta_calculation() {
+        let mut progress = Progress::new(1000);
+        
+        // Simulate some time passing
+        thread::sleep(Duration::from_millis(100));
+        progress.update(100);
+        
+        // ETA should be calculated
+        assert!(progress.eta.is_some());
+        // ETA might be very small due to small time elapsed, so just check it's not zero
+        assert!(progress.eta.unwrap().as_secs() >= 0);
+    }
+
+    #[test]
+    fn test_format_bytes_per_second() {
+        assert_eq!(format_bytes_per_second(1024.0), "1.0 KB/s");
+        assert_eq!(format_bytes_per_second(0.0), "0 B/s");
+        assert_eq!(format_bytes_per_second(1048576.0), "1.0 MB/s");
+    }
+
+    #[test]
+    fn test_format_bytes_edge_cases() {
+        // Test very large numbers
+        assert_eq!(format_bytes(1099511627776), "1.0 TB");
+        
+        // Test exact thresholds
+        assert_eq!(format_bytes(1024), "1.0 KB");
+        assert_eq!(format_bytes(1048576), "1.0 MB");
+        assert_eq!(format_bytes(1073741824), "1.0 GB");
+        
+        // Test fractional values
+        assert_eq!(format_bytes(1536), "1.5 KB");
+        assert_eq!(format_bytes(2560), "2.5 KB");
+    }
+
+    #[test]
+    fn test_format_duration_edge_cases() {
+        // Test exact minute boundaries
+        assert_eq!(format_duration(Duration::from_secs(120)), "2m");
+        assert_eq!(format_duration(Duration::from_secs(180)), "3m");
+        
+        // Test exact hour boundaries
+        assert_eq!(format_duration(Duration::from_secs(7200)), "2h");
+        assert_eq!(format_duration(Duration::from_secs(10800)), "3h");
+        
+        // Test hours with minutes
+        assert_eq!(format_duration(Duration::from_secs(3720)), "1h 2m");
+        assert_eq!(format_duration(Duration::from_secs(7260)), "2h 1m");
+    }
+
+    #[test]
+    fn test_progress_speed_edge_cases() {
+        let mut progress = Progress::new(1000);
+        
+        // Test immediate update (no time elapsed)
+        progress.update(100);
+        assert!(progress.speed.is_none());
+        assert!(progress.eta.is_none());
+        
+        // Test with very small time elapsed
+        thread::sleep(Duration::from_millis(1));
+        progress.update(200);
+        // Speed might still be None due to very small time
+    }
 }

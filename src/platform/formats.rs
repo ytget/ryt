@@ -425,4 +425,299 @@ mod tests {
         assert_eq!(stats.max_bitrate, 5000000);
         assert_eq!(stats.min_bitrate, 1000000);
     }
+
+    #[test]
+    fn test_select_format_height() {
+        let formats = create_test_formats();
+        let selector = FormatSelector::new(QualitySelector::Height(720));
+
+        let selected = select_format(&formats, &selector).unwrap();
+        assert_eq!(selected.itag, 22);
+        assert_eq!(selected.height, Some(720));
+    }
+
+    #[test]
+    fn test_select_format_height_le() {
+        let formats = create_test_formats();
+        let selector = FormatSelector::new(QualitySelector::HeightLessOrEqual(720));
+
+        let selected = select_format(&formats, &selector).unwrap();
+        assert!(selected.height.unwrap_or(0) <= 720);
+    }
+
+    #[test]
+    fn test_select_format_height_ge() {
+        let formats = create_test_formats();
+        let selector = FormatSelector::new(QualitySelector::HeightGreaterOrEqual(720));
+
+        let selected = select_format(&formats, &selector).unwrap();
+        assert!(selected.height.unwrap_or(0) >= 720);
+    }
+
+    #[test]
+    fn test_select_format_with_extension() {
+        let formats = create_test_formats();
+        let selector = FormatSelector::new(QualitySelector::Best).with_extension("mp4");
+
+        let selected = select_format(&formats, &selector).unwrap();
+        assert!(selected.mime_type.contains("mp4"));
+    }
+
+    #[test]
+    fn test_select_format_with_height_min() {
+        let formats = create_test_formats();
+        let selector = FormatSelector::new(QualitySelector::Best).with_height_min(720);
+
+        let selected = select_format(&formats, &selector).unwrap();
+        assert!(selected.height.unwrap_or(0) >= 720);
+    }
+
+    #[test]
+    fn test_select_format_with_preferred_itag() {
+        let formats = create_test_formats();
+        let selector = FormatSelector::new(QualitySelector::Best).with_itag(18);
+
+        let selected = select_format(&formats, &selector).unwrap();
+        assert_eq!(selected.itag, 18);
+    }
+
+    #[test]
+    fn test_select_format_no_candidates() {
+        let formats = create_test_formats();
+        let selector = FormatSelector::new(QualitySelector::Itag(999));
+
+        let result = select_format(&formats, &selector);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), RytError::NoFormatFound));
+    }
+
+    #[test]
+    fn test_get_best_audio_format() {
+        let mut formats = create_test_formats();
+        // Add an audio-only format
+        formats.push(Format {
+            itag: 140,
+            url: "http://example.com/140".to_string(),
+            quality: "audio".to_string(),
+            mime_type: "audio/mp4".to_string(),
+            bitrate: 128000,
+            size: Some(10000000),
+            signature_cipher: None,
+            audio_codec: Some("aac".to_string()),
+            video_codec: None,
+            fps: None,
+            width: None,
+            height: None,
+            audio_sample_rate: Some(44100),
+            audio_channels: Some(2),
+            language: None,
+            note: None,
+        });
+
+        let best = get_best_audio_format(&formats).unwrap();
+        assert_eq!(best.itag, 140);
+    }
+
+    #[test]
+    fn test_get_formats_by_container() {
+        let formats = create_test_formats();
+        let mp4_formats = get_formats_by_container(&formats, "mp4");
+        assert_eq!(mp4_formats.len(), 3);
+    }
+
+    #[test]
+    fn test_get_formats_by_quality() {
+        let formats = create_test_formats();
+        let hd_formats = get_formats_by_quality(&formats, "720p");
+        assert_eq!(hd_formats.len(), 1);
+        assert_eq!(hd_formats[0].itag, 22);
+    }
+
+    #[test]
+    fn test_get_formats_by_height_range() {
+        let formats = create_test_formats();
+        let medium_formats = get_formats_by_height_range(&formats, 400, 800);
+        assert_eq!(medium_formats.len(), 1);
+        assert_eq!(medium_formats[0].itag, 22);
+    }
+
+    #[test]
+    fn test_get_formats_by_bitrate_range() {
+        let formats = create_test_formats();
+        let medium_bitrate_formats = get_formats_by_bitrate_range(&formats, 1000000, 3000000);
+        assert_eq!(medium_bitrate_formats.len(), 2);
+    }
+
+    #[test]
+    fn test_sort_formats_by_quality() {
+        let mut formats = create_test_formats();
+        sort_formats_by_quality(&mut formats);
+        
+        // Should be sorted by height (descending)
+        assert_eq!(formats[0].itag, 137); // 1080p
+        assert_eq!(formats[1].itag, 22);  // 720p
+        assert_eq!(formats[2].itag, 18);  // 360p
+    }
+
+    #[test]
+    fn test_sort_formats_by_bitrate() {
+        let mut formats = create_test_formats();
+        sort_formats_by_bitrate(&mut formats);
+        
+        // Should be sorted by bitrate (descending)
+        assert_eq!(formats[0].itag, 137); // 5000000
+        assert_eq!(formats[1].itag, 22);  // 2000000
+        assert_eq!(formats[2].itag, 18);  // 1000000
+    }
+
+    #[test]
+    fn test_sort_formats_by_size() {
+        let mut formats = create_test_formats();
+        sort_formats_by_size(&mut formats);
+        
+        // Should be sorted by size (descending)
+        assert_eq!(formats[0].itag, 137); // 200000000
+        assert_eq!(formats[1].itag, 22);  // 100000000
+        assert_eq!(formats[2].itag, 18);  // 50000000
+    }
+
+    #[test]
+    fn test_filter_formats_by_codec() {
+        let formats = create_test_formats();
+        let avc1_formats = filter_formats_by_codec(&formats, "avc1");
+        assert_eq!(avc1_formats.len(), 3);
+    }
+
+    #[test]
+    fn test_filter_formats_by_audio_codec() {
+        let formats = create_test_formats();
+        let aac_formats = filter_formats_by_codec(&formats, "aac");
+        assert_eq!(aac_formats.len(), 2); // Only progressive formats have audio
+    }
+
+    #[test]
+    fn test_format_stats_string_methods() {
+        let formats = create_test_formats();
+        let stats = get_format_stats(&formats);
+
+        // Test string formatting methods
+        assert!(!stats.total_size_string().is_empty());
+        assert!(!stats.avg_bitrate_string().is_empty());
+        assert!(!stats.max_bitrate_string().is_empty());
+        assert!(!stats.min_bitrate_string().is_empty());
+        
+        // Test specific values
+        assert_eq!(stats.avg_bitrate_string(), "2666 kbps"); // (2000000 + 1000000 + 5000000) / 3 / 1000
+        assert_eq!(stats.max_bitrate_string(), "5000 kbps");
+        assert_eq!(stats.min_bitrate_string(), "1000 kbps");
+    }
+
+    #[test]
+    fn test_format_stats_empty_formats() {
+        let formats = vec![];
+        let stats = get_format_stats(&formats);
+
+        assert_eq!(stats.total_formats, 0);
+        assert_eq!(stats.progressive_formats, 0);
+        assert_eq!(stats.video_only_formats, 0);
+        assert_eq!(stats.audio_only_formats, 0);
+        assert_eq!(stats.total_bitrate, 0);
+        assert_eq!(stats.avg_bitrate, 0);
+        assert_eq!(stats.max_bitrate, 0);
+        assert_eq!(stats.min_bitrate, 0);
+        assert_eq!(stats.total_size, 0);
+        assert_eq!(stats.max_height, 0);
+        assert_eq!(stats.min_height, 0);
+    }
+
+    #[test]
+    fn test_format_stats_zero_bitrate_strings() {
+        let stats = FormatStats {
+            total_formats: 0,
+            progressive_formats: 0,
+            video_only_formats: 0,
+            audio_only_formats: 0,
+            total_bitrate: 0,
+            avg_bitrate: 0,
+            max_bitrate: 0,
+            min_bitrate: 0,
+            total_size: 0,
+            max_height: 0,
+            min_height: 0,
+        };
+
+        assert_eq!(stats.avg_bitrate_string(), "Unknown");
+        assert_eq!(stats.max_bitrate_string(), "Unknown");
+        assert_eq!(stats.min_bitrate_string(), "Unknown");
+    }
+
+    #[test]
+    fn test_format_stats_default() {
+        let stats = FormatStats::default();
+        assert_eq!(stats.total_formats, 0);
+        assert_eq!(stats.progressive_formats, 0);
+        assert_eq!(stats.video_only_formats, 0);
+        assert_eq!(stats.audio_only_formats, 0);
+        assert_eq!(stats.total_bitrate, 0);
+        assert_eq!(stats.avg_bitrate, 0);
+        assert_eq!(stats.max_bitrate, 0);
+        assert_eq!(stats.min_bitrate, 0);
+        assert_eq!(stats.total_size, 0);
+        assert_eq!(stats.max_height, 0);
+        assert_eq!(stats.min_height, 0);
+    }
+
+    #[test]
+    fn test_select_format_edge_cases() {
+        // Test with empty formats
+        let empty_formats = vec![];
+        let selector = FormatSelector::new(QualitySelector::Best);
+        let result = select_format(&empty_formats, &selector);
+        assert!(result.is_err());
+
+        // Test with formats that have no height
+        let no_height_formats = vec![Format {
+            itag: 999,
+            url: "http://example.com/999".to_string(),
+            quality: "unknown".to_string(),
+            mime_type: "video/mp4".to_string(),
+            bitrate: 1000000,
+            size: Some(1000000),
+            signature_cipher: None,
+            audio_codec: None,
+            video_codec: None,
+            fps: None,
+            width: None,
+            height: None,
+            audio_sample_rate: None,
+            audio_channels: None,
+            language: None,
+            note: None,
+        }];
+
+        let selector = FormatSelector::new(QualitySelector::Height(720));
+        let result = select_format(&no_height_formats, &selector);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_best_progressive_format_empty() {
+        let formats = vec![];
+        let result = get_best_progressive_format(&formats);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_get_best_video_format_empty() {
+        let formats = vec![];
+        let result = get_best_video_format(&formats);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_get_best_audio_format_empty() {
+        let formats = vec![];
+        let result = get_best_audio_format(&formats);
+        assert!(result.is_none());
+    }
 }

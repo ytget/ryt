@@ -234,6 +234,18 @@ make clippy    # Run linter
 make fmt       # Format code
 ```
 
+
+```
+$ make download URL="https://www.example.com/w?v=dQw4w9W3i3" OUTPUT="demo_video.mp4"
+✅ Download completed!
+💾 Saved to: downloaded file
+⏱️  Time: 4s
+📹 demo_video.mp4
+👤 Rick Astley
+⏱️  3m 33s
+📊 30 formats available
+```
+
 ## Dependencies
 
 - **tokio** - Async runtime
@@ -281,10 +293,6 @@ The CI ensures:
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## Acknowledgments
 
 This project is built with Rust for improved performance and memory safety.
@@ -294,3 +302,7 @@ This project is built with Rust for improved performance and memory safety.
 - 📫 [Report Issues](https://github.com/ytget/ryt/issues)
 - 💬 [Discussions](https://github.com/ytget/ryt/discussions)
 - 📖 [Documentation](https://github.com/ytget/ryt/wiki)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

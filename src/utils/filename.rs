@@ -151,4 +151,128 @@ mod tests {
         let result = generate_unique_filename(base_path, "test_file.mp4");
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_to_safe_filename_edge_cases() {
+        // Test with empty extension
+        assert_eq!(to_safe_filename("Test Video", ""), "Test Video");
+        
+        // Test with extension starting with dot
+        assert_eq!(to_safe_filename("Test Video", ".mp4"), "Test Video.mp4");
+        
+        // Test with extension not starting with dot
+        assert_eq!(to_safe_filename("Test Video", "mp4"), "Test Video.mp4");
+        
+        // Test with very long title (should be truncated)
+        let long_title = "a".repeat(250);
+        let result = to_safe_filename(&long_title, "mp4");
+        assert!(result.len() <= 204); // 200 chars + ".mp4"
+        
+        // Test with title that becomes empty after cleaning
+        assert_eq!(to_safe_filename("...", "mp4"), "video.mp4");
+        assert_eq!(to_safe_filename("   ", "mp4"), "video.mp4");
+        
+        // Test with title that has leading/trailing dots and spaces
+        assert_eq!(to_safe_filename("  .Test Video.  ", "mp4"), "Test Video.mp4");
+    }
+
+    #[test]
+    fn test_is_safe_filename_reserved_names() {
+        // Test Windows reserved names
+        assert!(!is_safe_filename("CON.mp4"));
+        assert!(!is_safe_filename("PRN.mp4"));
+        assert!(!is_safe_filename("AUX.mp4"));
+        assert!(!is_safe_filename("NUL.mp4"));
+        assert!(!is_safe_filename("COM1.mp4"));
+        assert!(!is_safe_filename("LPT1.mp4"));
+        
+        // Test case insensitive
+        assert!(!is_safe_filename("con.mp4"));
+        assert!(!is_safe_filename("Con.mp4"));
+        
+        // Test with extension
+        assert!(!is_safe_filename("CON"));
+        assert!(!is_safe_filename("PRN"));
+    }
+
+    #[test]
+    fn test_is_safe_filename_length_limits() {
+        // Test empty filename
+        assert!(!is_safe_filename(""));
+        
+        // Test too long filename
+        let long_filename = "a".repeat(256);
+        assert!(!is_safe_filename(&long_filename));
+        
+        // Test exactly 255 characters (should be valid)
+        let max_filename = "a".repeat(255);
+        assert!(is_safe_filename(&max_filename));
+    }
+
+    #[test]
+    fn test_is_safe_filename_invalid_chars() {
+        // Test various invalid characters
+        assert!(!is_safe_filename("file<test>.mp4"));
+        assert!(!is_safe_filename("file>test.mp4"));
+        assert!(!is_safe_filename("file:test.mp4"));
+        assert!(!is_safe_filename("file\"test.mp4"));
+        assert!(!is_safe_filename("file/test.mp4"));
+        assert!(!is_safe_filename("file\\test.mp4"));
+        assert!(!is_safe_filename("file|test.mp4"));
+        assert!(!is_safe_filename("file?test.mp4"));
+        assert!(!is_safe_filename("file*test.mp4"));
+        
+        // Test control characters
+        assert!(!is_safe_filename("file\x00test.mp4"));
+        assert!(!is_safe_filename("file\x1ftest.mp4"));
+    }
+
+    #[test]
+    fn test_is_safe_filename_leading_trailing_chars() {
+        // Test leading/trailing dots
+        assert!(!is_safe_filename(".file.mp4"));
+        assert!(!is_safe_filename("file.mp4."));
+        
+        // Test leading/trailing spaces
+        assert!(!is_safe_filename(" file.mp4"));
+        assert!(!is_safe_filename("file.mp4 "));
+        
+        // Test valid cases
+        assert!(is_safe_filename("file.mp4"));
+        assert!(is_safe_filename("file with spaces.mp4"));
+    }
+
+    #[test]
+    fn test_generate_unique_filename_edge_cases() {
+        use std::fs::File;
+        
+        // Create a temporary directory for testing
+        let temp_dir = std::env::temp_dir();
+        let test_dir = temp_dir.join("ryt_test_unique_filename");
+        std::fs::create_dir_all(&test_dir).unwrap();
+        
+        // Test with non-existent file
+        let result = generate_unique_filename(&test_dir, "nonexistent.mp4");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "nonexistent.mp4");
+        
+        // Test with existing file
+        let existing_file = test_dir.join("existing.mp4");
+        File::create(&existing_file).unwrap();
+        
+        let result = generate_unique_filename(&test_dir, "existing.mp4");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "existing (1).mp4");
+        
+        // Test with file without extension
+        let existing_file_no_ext = test_dir.join("existing");
+        File::create(&existing_file_no_ext).unwrap();
+        
+        let result = generate_unique_filename(&test_dir, "existing");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "existing (1)");
+        
+        // Clean up
+        let _ = std::fs::remove_dir_all(&test_dir);
+    }
 }

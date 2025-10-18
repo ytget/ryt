@@ -167,4 +167,112 @@ mod tests {
         assert_eq!(get_container_format("audio/mpeg"), "mp3");
         assert_eq!(get_container_format("unknown/type"), "unknown");
     }
+
+    #[test]
+    fn test_is_adaptive_mime() {
+        assert!(is_adaptive_mime("video/mp4"));
+        assert!(is_adaptive_mime("audio/mp4"));
+        assert!(is_adaptive_mime("video/webm"));
+        assert!(is_adaptive_mime("audio/mpeg"));
+        assert!(!is_adaptive_mime("text/plain"));
+        assert!(!is_adaptive_mime("application/json"));
+    }
+
+    #[test]
+    fn test_ext_from_mime_comprehensive() {
+        // Test all video formats
+        assert_eq!(ext_from_mime("video/mp4"), "mp4");
+        assert_eq!(ext_from_mime("video/webm"), "webm");
+        assert_eq!(ext_from_mime("video/3gpp"), "3gp");
+        assert_eq!(ext_from_mime("video/x-flv"), "flv");
+        assert_eq!(ext_from_mime("video/quicktime"), "mov");
+        assert_eq!(ext_from_mime("video/x-msvideo"), "avi");
+        assert_eq!(ext_from_mime("video/x-ms-wmv"), "wmv");
+        assert_eq!(ext_from_mime("video/mp2t"), "ts");
+        assert_eq!(ext_from_mime("video/mp2p"), "mpeg");
+        assert_eq!(ext_from_mime("video/mpeg"), "mpeg");
+        assert_eq!(ext_from_mime("video/ogg"), "ogv");
+        assert_eq!(ext_from_mime("video/x-matroska"), "mkv");
+
+        // Test all audio formats
+        assert_eq!(ext_from_mime("audio/mp4"), "m4a");
+        assert_eq!(ext_from_mime("audio/webm"), "webm");
+        assert_eq!(ext_from_mime("audio/mpeg"), "mp3");
+        assert_eq!(ext_from_mime("audio/ogg"), "ogg");
+        assert_eq!(ext_from_mime("audio/wav"), "wav");
+        assert_eq!(ext_from_mime("audio/x-wav"), "wav");
+        assert_eq!(ext_from_mime("audio/flac"), "flac");
+        assert_eq!(ext_from_mime("audio/aac"), "aac");
+        assert_eq!(ext_from_mime("audio/x-aac"), "aac");
+        assert_eq!(ext_from_mime("audio/vorbis"), "ogg");
+        assert_eq!(ext_from_mime("audio/opus"), "opus");
+
+        // Test fallback
+        assert_eq!(ext_from_mime("unknown/type"), "bin");
+    }
+
+    #[test]
+    fn test_mime_from_ext_comprehensive() {
+        // Test all video formats
+        assert_eq!(mime_from_ext("mp4"), "video/mp4");
+        assert_eq!(mime_from_ext("webm"), "video/webm");
+        assert_eq!(mime_from_ext("3gp"), "video/3gpp");
+        assert_eq!(mime_from_ext("flv"), "video/x-flv");
+        assert_eq!(mime_from_ext("mov"), "video/quicktime");
+        assert_eq!(mime_from_ext("avi"), "video/x-msvideo");
+        assert_eq!(mime_from_ext("wmv"), "video/x-ms-wmv");
+        assert_eq!(mime_from_ext("ts"), "video/mp2t");
+        assert_eq!(mime_from_ext("mpeg"), "video/mpeg");
+        assert_eq!(mime_from_ext("mpg"), "video/mpeg");
+        assert_eq!(mime_from_ext("ogv"), "video/ogg");
+        assert_eq!(mime_from_ext("mkv"), "video/x-matroska");
+
+        // Test all audio formats
+        assert_eq!(mime_from_ext("m4a"), "audio/mp4");
+        assert_eq!(mime_from_ext("mp3"), "audio/mpeg");
+        assert_eq!(mime_from_ext("ogg"), "audio/ogg");
+        assert_eq!(mime_from_ext("wav"), "audio/wav");
+        assert_eq!(mime_from_ext("flac"), "audio/flac");
+        assert_eq!(mime_from_ext("aac"), "audio/aac");
+        assert_eq!(mime_from_ext("opus"), "audio/opus");
+
+        // Test with dots and case sensitivity
+        assert_eq!(mime_from_ext(".mp4"), "video/mp4");
+        assert_eq!(mime_from_ext("MP4"), "video/mp4");
+        assert_eq!(mime_from_ext(".MP4"), "video/mp4");
+
+        // Test fallback
+        assert_eq!(mime_from_ext("unknown"), "application/octet-stream");
+    }
+
+    #[test]
+    fn test_get_container_format_comprehensive() {
+        // Test all video formats
+        assert_eq!(get_container_format("video/mp4"), "mp4");
+        assert_eq!(get_container_format("video/webm"), "webm");
+        assert_eq!(get_container_format("video/3gpp"), "3gp");
+        assert_eq!(get_container_format("video/x-flv"), "flv");
+        assert_eq!(get_container_format("video/quicktime"), "mov");
+        assert_eq!(get_container_format("video/x-msvideo"), "avi");
+        assert_eq!(get_container_format("video/x-ms-wmv"), "wmv");
+        assert_eq!(get_container_format("video/mp2t"), "ts");
+        assert_eq!(get_container_format("video/mpeg"), "mpeg");
+        assert_eq!(get_container_format("video/ogg"), "ogg");
+        assert_eq!(get_container_format("video/x-matroska"), "mkv");
+
+        // Test all audio formats
+        assert_eq!(get_container_format("audio/mp4"), "mp4");
+        assert_eq!(get_container_format("audio/webm"), "webm");
+        assert_eq!(get_container_format("audio/mpeg"), "mp3");
+        assert_eq!(get_container_format("audio/ogg"), "ogg");
+        assert_eq!(get_container_format("audio/wav"), "wav");
+        assert_eq!(get_container_format("audio/x-wav"), "wav");
+        assert_eq!(get_container_format("audio/flac"), "flac");
+        assert_eq!(get_container_format("audio/aac"), "aac");
+        assert_eq!(get_container_format("audio/x-aac"), "aac");
+        assert_eq!(get_container_format("audio/opus"), "opus");
+
+        // Test fallback
+        assert_eq!(get_container_format("unknown/type"), "unknown");
+    }
 }
