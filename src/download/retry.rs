@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_retry_executor_default() {
-        let executor = RetryExecutor::default();
+        let _executor = RetryExecutor::default();
         // Test that default executor can be created
         assert!(true); // If we get here, test passed
     }
@@ -367,7 +367,7 @@ mod tests {
             backoff_multiplier: 1.5,
             jitter_factor: 0.2,
         };
-        let executor = RetryExecutor::with_config(config);
+        let _executor = RetryExecutor::with_config(config);
         // Test that executor with custom config can be created
         assert!(true); // If we get here, test passed
     }

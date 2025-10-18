@@ -252,7 +252,8 @@ mod tests {
         // ETA should be calculated
         assert!(progress.eta.is_some());
         // ETA might be very small due to small time elapsed, so just check it's not zero
-        assert!(progress.eta.unwrap().as_secs() >= 0);
+        // ETA should be calculated and be non-negative
+        assert!(progress.eta.is_some());
     }
 
     #[test]

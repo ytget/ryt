@@ -285,12 +285,8 @@ mod tests {
         
         // Check stats after adding data
         // Note: moka cache entry_count() might not immediately reflect changes
-        let stats = cache.get_stats();
-        // We just verify that the stats are accessible and not negative
-        assert!(stats.player_js_entries >= 0);
-        assert!(stats.signature_entries >= 0);
-        assert!(stats.visitor_id_entries >= 0);
-        assert!(stats.botguard_entries >= 0);
+        // We just verify that the stats are accessible
+        let _stats = cache.get_stats();
     }
 
     #[test]
