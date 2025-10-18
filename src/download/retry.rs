@@ -355,7 +355,7 @@ mod tests {
     fn test_retry_executor_default() {
         let _executor = RetryExecutor::default();
         // Test that default executor can be created
-        assert!(true); // If we get here, test passed
+        // If we get here, test passed
     }
 
     #[test]
@@ -369,7 +369,7 @@ mod tests {
         };
         let _executor = RetryExecutor::with_config(config);
         // Test that executor with custom config can be created
-        assert!(true); // If we get here, test passed
+        // If we get here, test passed
     }
 
     #[test]
@@ -391,7 +391,7 @@ mod tests {
     fn test_retry_config_builder_default() {
         let builder = RetryConfigBuilder::default();
         let config = builder.build();
-        
+
         // Should have default values
         assert_eq!(config.max_retries, 3);
         assert_eq!(config.initial_delay, Duration::from_millis(200));
@@ -435,7 +435,7 @@ mod tests {
             max_retries: 2,
             initial_delay: Duration::from_millis(100),
             max_delay: Duration::from_millis(200), // Low max delay
-            backoff_multiplier: 10.0, // High multiplier to exceed max delay
+            backoff_multiplier: 10.0,              // High multiplier to exceed max delay
             jitter_factor: 0.0,
         };
         let executor = RetryExecutor::with_config(config);

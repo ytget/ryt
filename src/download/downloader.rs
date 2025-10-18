@@ -178,15 +178,15 @@ mod tests {
     #[test]
     fn test_downloader_config_edge_cases() {
         let mut config = DownloaderConfig::default();
-        
+
         // Test with zero chunk size
         config.chunk_size = 0;
         assert_eq!(config.chunk_size, 0);
-        
+
         // Test with zero max retries
         config.max_retries = 0;
         assert_eq!(config.max_retries, 0);
-        
+
         // Test with very large rate limit
         config.rate_limit_bps = Some(u64::MAX);
         assert_eq!(config.rate_limit_bps, Some(u64::MAX));
@@ -197,7 +197,7 @@ mod tests {
         // Test with zero rate limit
         let limiter = RateLimiter::new(0);
         assert_eq!(limiter.bytes_per_second, 0);
-        
+
         // Test with very large rate limit
         let limiter = RateLimiter::new(u64::MAX);
         assert_eq!(limiter.bytes_per_second, u64::MAX);
@@ -209,7 +209,7 @@ mod tests {
         let limiter = RateLimiter::new(0);
         assert_eq!(limiter.bytes_per_second, 0);
         assert_eq!(limiter.bytes_sent, 0);
-        
+
         // Note: wait_if_needed with zero rate limit will panic due to division by zero
         // This is documented behavior - zero rate limit should not be used
     }

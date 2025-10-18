@@ -818,7 +818,10 @@ mod tests {
     fn test_downloader_with_output_path() {
         let downloader = Downloader::new().with_output_path("/tmp/test.mp4");
         assert!(downloader.options.output_path.is_some());
-        assert_eq!(downloader.options.output_path.unwrap(), PathBuf::from("/tmp/test.mp4"));
+        assert_eq!(
+            downloader.options.output_path.unwrap(),
+            PathBuf::from("/tmp/test.mp4")
+        );
     }
 
     #[test]
@@ -838,17 +841,19 @@ mod tests {
 
     #[test]
     fn test_downloader_with_innertube_client() {
-        let downloader = Downloader::new()
-            .with_innertube_client("IOS", "19.29.1");
+        let downloader = Downloader::new().with_innertube_client("IOS", "19.29.1");
         assert_eq!(downloader.options.client_name, "IOS");
         assert_eq!(downloader.options.client_version, "19.29.1");
     }
 
     #[test]
     fn test_downloader_with_botguard_mode() {
-        let downloader = Downloader::new()
-            .with_botguard(crate::platform::botguard::BotguardMode::Force);
-        assert_eq!(downloader.botguard.mode, crate::platform::botguard::BotguardMode::Force);
+        let downloader =
+            Downloader::new().with_botguard(crate::platform::botguard::BotguardMode::Force);
+        assert_eq!(
+            downloader.botguard.mode,
+            crate::platform::botguard::BotguardMode::Force
+        );
     }
 
     #[test]
@@ -859,15 +864,13 @@ mod tests {
 
     #[test]
     fn test_downloader_with_botguard_ttl() {
-        let downloader = Downloader::new()
-            .with_botguard_ttl(Duration::from_secs(3600));
+        let downloader = Downloader::new().with_botguard_ttl(Duration::from_secs(3600));
         assert_eq!(downloader.botguard.ttl, Duration::from_secs(3600));
     }
 
     #[test]
     fn test_downloader_with_timeout() {
-        let downloader = Downloader::new()
-            .with_timeout(Duration::from_secs(60));
+        let downloader = Downloader::new().with_timeout(Duration::from_secs(60));
         assert_eq!(downloader.options.timeout, Duration::from_secs(60));
     }
 
@@ -954,7 +957,10 @@ mod tests {
         assert_eq!(downloader.options.rate_limit_bps, Some(1024));
         assert_eq!(downloader.options.timeout, Duration::from_secs(60));
         assert_eq!(downloader.options.max_retries, 5);
-        assert_eq!(downloader.botguard.mode, crate::platform::botguard::BotguardMode::Auto);
+        assert_eq!(
+            downloader.botguard.mode,
+            crate::platform::botguard::BotguardMode::Auto
+        );
         assert!(downloader.botguard.debug);
     }
 

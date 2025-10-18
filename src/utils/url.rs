@@ -222,9 +222,13 @@ mod tests {
     #[test]
     fn test_is_playlist_url_comprehensive() {
         // Test playlist URLs
-        assert!(is_playlist_url("https://www.youtube.com/playlist?list=PLxxxx"));
+        assert!(is_playlist_url(
+            "https://www.youtube.com/playlist?list=PLxxxx"
+        ));
         assert!(is_playlist_url("https://youtube.com/playlist?list=UUxxxx"));
-        assert!(is_playlist_url("https://www.youtube.com/watch?v=xxx&list=PLxxxx"));
+        assert!(is_playlist_url(
+            "https://www.youtube.com/watch?v=xxx&list=PLxxxx"
+        ));
 
         // Test raw playlist IDs
         assert!(is_playlist_url("PLxxxx"));

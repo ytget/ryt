@@ -465,84 +465,99 @@ mod tests {
     #[test]
     fn test_video_info_methods() {
         let mut info = VideoInfo::new("test_id".to_string(), "Test Video".to_string());
-        
+
         // Test best_format with empty formats
         assert!(info.best_format().is_none());
-        
+
         // Add some formats
-        let format1 = Format::new(22, "url1".to_string(), "720p".to_string(), "video/mp4".to_string());
-        let mut format2 = Format::new(137, "url2".to_string(), "1080p".to_string(), "video/mp4".to_string());
+        let format1 = Format::new(
+            22,
+            "url1".to_string(),
+            "720p".to_string(),
+            "video/mp4".to_string(),
+        );
+        let mut format2 = Format::new(
+            137,
+            "url2".to_string(),
+            "1080p".to_string(),
+            "video/mp4".to_string(),
+        );
         format2.bitrate = 1000;
-        
+
         info.formats.push(format1);
         info.formats.push(format2);
-        
+
         // Test best_format
         let best = info.best_format().unwrap();
         assert_eq!(best.bitrate, 1000);
-        
+
         // Test formats_by_extension
         let mp4_formats = info.formats_by_extension("mp4");
         assert_eq!(mp4_formats.len(), 2);
-        
+
         // Test formats_by_quality
         let hd_formats = info.formats_by_quality("720p");
         assert_eq!(hd_formats.len(), 1);
-        
+
         // Test total_size
         assert_eq!(info.total_size(), 0); // No sizes set
-        
+
         // Test has_progressive_formats
         assert!(!info.has_progressive_formats()); // No progressive formats
-        
+
         // Test has_adaptive_formats
         assert!(info.has_adaptive_formats()); // Has adaptive formats
     }
 
     #[test]
     fn test_format_methods() {
-        let mut format = Format::new(22, "url".to_string(), "720p".to_string(), "video/mp4".to_string());
-        
+        let mut format = Format::new(
+            22,
+            "url".to_string(),
+            "720p".to_string(),
+            "video/mp4".to_string(),
+        );
+
         // Test is_video_only
         assert!(format.is_video_only());
         assert!(!format.is_audio_only());
-        
+
         // Test extension
         assert_eq!(format.extension(), "mp4");
-        
+
         // Test container
         assert_eq!(format.container(), "mp4");
-        
+
         // Test needs_deciphering
         assert!(!format.needs_deciphering());
-        
+
         // Test with signature cipher
         format.signature_cipher = Some("cipher".to_string());
         assert!(format.needs_deciphering());
-        
+
         // Test with n parameter in URL
         format.url = "http://example.com?n=123".to_string();
         assert!(format.needs_deciphering());
-        
+
         // Test quality_string
         assert_eq!(format.quality_string(), "720p");
-        
+
         // Test with empty quality but dimensions
         format.quality = String::new();
         format.width = Some(1280);
         format.height = Some(720);
         assert_eq!(format.quality_string(), "1280x720");
-        
+
         // Test with empty quality and no dimensions
         format.width = None;
         format.height = None;
         assert_eq!(format.quality_string(), "Unknown");
-        
+
         // Test size_string
         assert_eq!(format.size_string(), "Unknown");
         format.size = Some(1024);
         assert_eq!(format.size_string(), "1.0 KB");
-        
+
         // Test bitrate_string
         assert_eq!(format.bitrate_string(), "Unknown");
         format.bitrate = 1000000; // 1 Mbps
@@ -551,8 +566,13 @@ mod tests {
 
     #[test]
     fn test_format_audio_only() {
-        let format = Format::new(140, "url".to_string(), "audio".to_string(), "audio/mp4".to_string());
-        
+        let format = Format::new(
+            140,
+            "url".to_string(),
+            "audio".to_string(),
+            "audio/mp4".to_string(),
+        );
+
         assert!(!format.is_progressive());
         assert!(format.is_adaptive());
         assert!(!format.is_video_only());
@@ -561,10 +581,15 @@ mod tests {
 
     #[test]
     fn test_format_progressive_with_codecs() {
-        let mut format = Format::new(22, "url".to_string(), "720p".to_string(), "video/mp4".to_string());
+        let mut format = Format::new(
+            22,
+            "url".to_string(),
+            "720p".to_string(),
+            "video/mp4".to_string(),
+        );
         format.audio_codec = Some("aac".to_string());
         format.video_codec = Some("avc1".to_string());
-        
+
         assert!(format.is_progressive());
         assert!(!format.is_adaptive());
         assert!(!format.is_video_only());
@@ -573,17 +598,22 @@ mod tests {
 
     #[test]
     fn test_format_progressive_webm() {
-        let mut format = Format::new(43, "url".to_string(), "360p".to_string(), "video/webm".to_string());
+        let mut format = Format::new(
+            43,
+            "url".to_string(),
+            "360p".to_string(),
+            "video/webm".to_string(),
+        );
         format.audio_codec = Some("vorbis".to_string());
         format.video_codec = Some("vp8".to_string());
-        
+
         assert!(format.is_progressive());
     }
 
     #[test]
     fn test_playlist_item() {
         let item = PlaylistItem::new("video123".to_string(), "Test Video".to_string(), 1);
-        
+
         assert_eq!(item.video_id, "video123");
         assert_eq!(item.title, "Test Video");
         assert_eq!(item.index, 1);
@@ -597,7 +627,7 @@ mod tests {
             .with_height_limit(1080)
             .with_height_min(480)
             .with_itag(22);
-        
+
         assert!(matches!(selector.quality, QualitySelector::Height(720)));
         assert_eq!(selector.extension, Some("mp4".to_string()));
         assert_eq!(selector.height_limit, Some(1080));
@@ -616,24 +646,24 @@ mod tests {
             QualitySelector::from_str("WORST").unwrap(),
             QualitySelector::Worst
         );
-        
+
         // Test whitespace
         assert_eq!(
             QualitySelector::from_str("  best  ").unwrap(),
             QualitySelector::Best
         );
-        
+
         // Test invalid itag
         assert!(QualitySelector::from_str("itag=abc").is_err());
-        
+
         // Test invalid height
         assert!(QualitySelector::from_str("height=abc").is_err());
         assert!(QualitySelector::from_str("height<=abc").is_err());
         assert!(QualitySelector::from_str("height>=abc").is_err());
-        
+
         // Test empty string
         assert!(QualitySelector::from_str("").is_err());
-        
+
         // Test unknown selector
         assert!(QualitySelector::from_str("unknown=123").is_err());
     }
@@ -641,26 +671,36 @@ mod tests {
     #[test]
     fn test_video_info_with_formats() {
         let mut info = VideoInfo::new("test_id".to_string(), "Test Video".to_string());
-        
+
         // Add progressive format
-        let mut progressive_format = Format::new(22, "url1".to_string(), "720p".to_string(), "video/mp4".to_string());
+        let mut progressive_format = Format::new(
+            22,
+            "url1".to_string(),
+            "720p".to_string(),
+            "video/mp4".to_string(),
+        );
         progressive_format.audio_codec = Some("aac".to_string());
         progressive_format.video_codec = Some("avc1".to_string());
         progressive_format.size = Some(1000000);
         progressive_format.bitrate = 1000; // Set higher bitrate
         info.formats.push(progressive_format);
-        
+
         // Add adaptive format
-        let mut adaptive_format = Format::new(137, "url2".to_string(), "1080p".to_string(), "video/mp4".to_string());
+        let mut adaptive_format = Format::new(
+            137,
+            "url2".to_string(),
+            "1080p".to_string(),
+            "video/mp4".to_string(),
+        );
         adaptive_format.size = Some(2000000);
         adaptive_format.bitrate = 500; // Set lower bitrate
         info.formats.push(adaptive_format);
-        
+
         // Test methods
         assert!(info.has_progressive_formats());
         assert!(info.has_adaptive_formats());
         assert_eq!(info.total_size(), 3000000);
-        
+
         // Test best_format
         let best = info.best_format().unwrap();
         assert_eq!(best.itag, 22); // Format with higher bitrate (1000)

@@ -490,11 +490,11 @@ mod tests {
     fn test_create_progress_callback() {
         let formatter = Arc::new(OutputFormatter::new(VerbosityLevel::Normal));
         let callback = create_progress_callback(formatter);
-        
+
         // Create a test progress
         let mut progress = Progress::new(1000);
         progress.update(500);
-        
+
         // Should not panic
         callback(progress);
     }
@@ -503,11 +503,11 @@ mod tests {
     fn test_update_progress_with_speed() {
         let mut formatter = OutputFormatter::new(VerbosityLevel::Normal);
         let _progress_bar = formatter.create_progress_bar(1000);
-        
+
         let mut progress = Progress::new(1000);
         progress.update(500);
         // Speed is calculated automatically in update method
-        
+
         // Should not panic
         formatter.update_progress(&progress);
     }
@@ -516,10 +516,10 @@ mod tests {
     fn test_update_progress_without_speed() {
         let mut formatter = OutputFormatter::new(VerbosityLevel::Normal);
         let _progress_bar = formatter.create_progress_bar(1000);
-        
+
         let mut progress = Progress::new(1000);
         progress.update(500);
-        
+
         // Should not panic
         formatter.update_progress(&progress);
     }
@@ -528,7 +528,7 @@ mod tests {
     fn test_finish_progress() {
         let mut formatter = OutputFormatter::new(VerbosityLevel::Normal);
         let _progress_bar = formatter.create_progress_bar(1000);
-        
+
         // Should not panic
         formatter.finish_progress("Download completed!");
     }
@@ -536,7 +536,7 @@ mod tests {
     #[test]
     fn test_finish_progress_no_bar() {
         let formatter = OutputFormatter::new(VerbosityLevel::Normal);
-        
+
         // Should not panic even without progress bar
         formatter.finish_progress("Download completed!");
     }

@@ -372,24 +372,24 @@ mod tests {
         assert_eq!(args.format, None);
         assert_eq!(args.ext, None);
         assert_eq!(args.output, None);
-        assert_eq!(args.no_progress, false);
+        assert!(!args.no_progress);
         assert_eq!(args.retries, 3);
         assert_eq!(args.rate_limit, None);
-        assert_eq!(args.playlist, false);
+        assert!(!args.playlist);
         assert_eq!(args.limit, 0);
         assert_eq!(args.concurrency, 1);
         assert_eq!(args.botguard, BotguardMode::Off);
-        assert_eq!(args.debug_botguard, false);
+        assert!(!args.debug_botguard);
         assert_eq!(args.botguard_cache, BotguardCacheMode::Mem);
         assert_eq!(args.botguard_cache_dir, None);
         assert_eq!(args.botguard_script, None);
         assert_eq!(args.client_name, None);
         assert_eq!(args.client_version, None);
-        assert_eq!(args.print_url, false);
+        assert!(!args.print_url);
         assert_eq!(args.user_agent, None);
         assert_eq!(args.proxy, None);
-        assert_eq!(args.verbose, false);
-        assert_eq!(args.quiet, false);
+        assert!(!args.verbose);
+        assert!(!args.quiet);
     }
 
     #[test]
@@ -424,24 +424,24 @@ mod tests {
         assert_eq!(args.format, Some("best".to_string()));
         assert_eq!(args.ext, Some("mp4".to_string()));
         assert_eq!(args.output, Some(PathBuf::from("/tmp")));
-        assert_eq!(args.no_progress, true);
+        assert!(args.no_progress);
         assert_eq!(args.retries, 5);
         assert_eq!(args.rate_limit, Some("2MB/s".to_string()));
-        assert_eq!(args.playlist, true);
+        assert!(args.playlist);
         assert_eq!(args.limit, 10);
         assert_eq!(args.concurrency, 3);
         assert_eq!(args.botguard, BotguardMode::Auto);
-        assert_eq!(args.debug_botguard, true);
+        assert!(args.debug_botguard);
         assert_eq!(args.botguard_cache, BotguardCacheMode::File);
         assert_eq!(args.botguard_cache_dir, Some(PathBuf::from("/cache")));
         assert_eq!(args.botguard_script, Some(PathBuf::from("/script.js")));
         assert_eq!(args.client_name, Some("CHROME".to_string()));
         assert_eq!(args.client_version, Some("1.0.0".to_string()));
-        assert_eq!(args.print_url, true);
+        assert!(args.print_url);
         assert_eq!(args.user_agent, Some("Custom Agent".to_string()));
         assert_eq!(args.proxy, Some("http://proxy:8080".to_string()));
-        assert_eq!(args.verbose, true);
-        assert_eq!(args.quiet, false);
+        assert!(args.verbose);
+        assert!(!args.quiet);
     }
 }
 

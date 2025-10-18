@@ -131,25 +131,46 @@ mod tests {
         assert_eq!(format!("{}", invalid_url), "Invalid URL: https://invalid");
 
         let botguard_error = RytError::BotguardError("Test botguard error".to_string());
-        assert_eq!(format!("{}", botguard_error), "Botguard error: Test botguard error");
+        assert_eq!(
+            format!("{}", botguard_error),
+            "Botguard error: Test botguard error"
+        );
 
         let cipher_error = RytError::CipherError("Test cipher error".to_string());
-        assert_eq!(format!("{}", cipher_error), "Cipher error: Test cipher error");
+        assert_eq!(
+            format!("{}", cipher_error),
+            "Cipher error: Test cipher error"
+        );
 
         let format_error = RytError::FormatError("Test format error".to_string());
-        assert_eq!(format!("{}", format_error), "Format parsing error: Test format error");
+        assert_eq!(
+            format!("{}", format_error),
+            "Format parsing error: Test format error"
+        );
 
         let playlist_error = RytError::PlaylistError("Test playlist error".to_string());
-        assert_eq!(format!("{}", playlist_error), "Playlist error: Test playlist error");
+        assert_eq!(
+            format!("{}", playlist_error),
+            "Playlist error: Test playlist error"
+        );
 
         let timeout_error = RytError::TimeoutError("Test timeout error".to_string());
-        assert_eq!(format!("{}", timeout_error), "Timeout error: Test timeout error");
+        assert_eq!(
+            format!("{}", timeout_error),
+            "Timeout error: Test timeout error"
+        );
 
         let rate_limit_error = RytError::RateLimitError("Test rate limit error".to_string());
-        assert_eq!(format!("{}", rate_limit_error), "Rate limit error: Test rate limit error");
+        assert_eq!(
+            format!("{}", rate_limit_error),
+            "Rate limit error: Test rate limit error"
+        );
 
         let generic_error = RytError::Generic("Test generic error".to_string());
-        assert_eq!(format!("{}", generic_error), "Generic error: Test generic error");
+        assert_eq!(
+            format!("{}", generic_error),
+            "Generic error: Test generic error"
+        );
     }
 
     #[test]
@@ -187,7 +208,8 @@ mod tests {
         }
 
         // Test regex error conversion
-        let regex_error = regex::Regex::new("[").unwrap_err();
+        #[allow(clippy::invalid_regex)]
+        let regex_error = regex::Regex::new("*invalid").unwrap_err();
         let ryt_error: RytError = regex_error.into();
         match ryt_error {
             RytError::RegexError(e) => {

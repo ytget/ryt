@@ -552,33 +552,33 @@ mod tests {
     fn test_sort_formats_by_quality() {
         let mut formats = create_test_formats();
         sort_formats_by_quality(&mut formats);
-        
+
         // Should be sorted by height (descending)
         assert_eq!(formats[0].itag, 137); // 1080p
-        assert_eq!(formats[1].itag, 22);  // 720p
-        assert_eq!(formats[2].itag, 18);  // 360p
+        assert_eq!(formats[1].itag, 22); // 720p
+        assert_eq!(formats[2].itag, 18); // 360p
     }
 
     #[test]
     fn test_sort_formats_by_bitrate() {
         let mut formats = create_test_formats();
         sort_formats_by_bitrate(&mut formats);
-        
+
         // Should be sorted by bitrate (descending)
         assert_eq!(formats[0].itag, 137); // 5000000
-        assert_eq!(formats[1].itag, 22);  // 2000000
-        assert_eq!(formats[2].itag, 18);  // 1000000
+        assert_eq!(formats[1].itag, 22); // 2000000
+        assert_eq!(formats[2].itag, 18); // 1000000
     }
 
     #[test]
     fn test_sort_formats_by_size() {
         let mut formats = create_test_formats();
         sort_formats_by_size(&mut formats);
-        
+
         // Should be sorted by size (descending)
         assert_eq!(formats[0].itag, 137); // 200000000
-        assert_eq!(formats[1].itag, 22);  // 100000000
-        assert_eq!(formats[2].itag, 18);  // 50000000
+        assert_eq!(formats[1].itag, 22); // 100000000
+        assert_eq!(formats[2].itag, 18); // 50000000
     }
 
     #[test]
@@ -605,7 +605,7 @@ mod tests {
         assert!(!stats.avg_bitrate_string().is_empty());
         assert!(!stats.max_bitrate_string().is_empty());
         assert!(!stats.min_bitrate_string().is_empty());
-        
+
         // Test specific values
         assert_eq!(stats.avg_bitrate_string(), "2666 kbps"); // (2000000 + 1000000 + 5000000) / 3 / 1000
         assert_eq!(stats.max_bitrate_string(), "5000 kbps");

@@ -254,14 +254,13 @@ mod tests {
         // Test exact hour boundaries
         assert_eq!(format_duration(Duration::from_secs(3600)), "1h");
         assert_eq!(format_duration(Duration::from_secs(7200)), "2h");
-        
+
         // Test exact minute boundaries
         assert_eq!(format_duration(Duration::from_secs(60)), "1m");
         assert_eq!(format_duration(Duration::from_secs(120)), "2m");
-        
+
         // Test large durations
         assert_eq!(format_duration(Duration::from_secs(3661)), "1h 1m");
         assert_eq!(format_duration(Duration::from_secs(3721)), "1h 2m");
     }
-
 }

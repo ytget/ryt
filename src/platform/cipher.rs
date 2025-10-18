@@ -2203,8 +2203,11 @@ mod tests {
     fn test_cached_player_creation() {
         let content = "test_content".to_string();
         let expires_at = std::time::Instant::now() + Duration::from_secs(60);
-        let cached_player = CachedPlayer { content, expires_at };
-        
+        let cached_player = CachedPlayer {
+            content,
+            expires_at,
+        };
+
         assert_eq!(cached_player.content, "test_content");
         assert!(!cached_player.expires_at.elapsed().as_secs() > 60);
     }
@@ -2214,7 +2217,7 @@ mod tests {
         let _client = Client::new();
         let _cipher = Cipher::new();
         // Test that cipher can be created with default client
-        assert!(true);
+        // Test passed
     }
 
     #[tokio::test]
@@ -2222,11 +2225,11 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "test_signature";
         let url = "invalid_url";
-        
+
         // These calls will fail due to invalid URL, but we test the cache mechanism
         let result1 = cipher.decipher_signature(signature, url).await;
         let result2 = cipher.decipher_signature(signature, url).await;
-        
+
         // Both should fail with the same error
         assert!(result1.is_err());
         assert!(result2.is_err());
@@ -2237,11 +2240,11 @@ mod tests {
         let cipher = Cipher::new();
         let n_param = "test_n_param";
         let url = "invalid_url";
-        
+
         // These calls will fail due to invalid URL, but we test the cache mechanism
         let result1 = cipher.decipher_n_parameter(n_param, url).await;
         let result2 = cipher.decipher_n_parameter(n_param, url).await;
-        
+
         // Both should fail with the same error
         assert!(result1.is_err());
         assert!(result2.is_err());
@@ -2252,33 +2255,37 @@ mod tests {
         let _cipher = Cipher::new();
         // Test that cipher can be cloned (if it implements Clone)
         // This is mainly to test that the struct can be used in different contexts
-        assert!(true);
+        // Test passed
     }
 
     #[tokio::test]
     async fn test_decipher_signature_edge_cases() {
         let cipher = Cipher::new();
-        
+
         // Test with very long signature
         let long_signature = "a".repeat(1000);
-        let result = cipher.decipher_signature(&long_signature, "invalid_url").await;
+        let result = cipher
+            .decipher_signature(&long_signature, "invalid_url")
+            .await;
         assert!(result.is_err()); // Should fail due to invalid URL
-        
+
         // Test with special characters
         let special_signature = "!@#$%^&*()";
-        let result = cipher.decipher_signature(special_signature, "invalid_url").await;
+        let result = cipher
+            .decipher_signature(special_signature, "invalid_url")
+            .await;
         assert!(result.is_err()); // Should fail due to invalid URL
     }
 
     #[tokio::test]
     async fn test_decipher_n_parameter_edge_cases() {
         let cipher = Cipher::new();
-        
+
         // Test with very long n parameter
         let long_n = "a".repeat(1000);
         let result = cipher.decipher_n_parameter(&long_n, "invalid_url").await;
         assert!(result.is_err()); // Should fail due to invalid URL
-        
+
         // Test with special characters
         let special_n = "!@#$%^&*()";
         let result = cipher.decipher_n_parameter(special_n, "invalid_url").await;
@@ -2412,7 +2419,6 @@ mod tests {
         assert!(result.is_ok());
     }
 
-
     #[test]
     fn test_apply_ncode_transformation_reverse() {
         let cipher = Cipher::new();
@@ -2512,7 +2518,7 @@ mod tests {
     fn test_sanitize_player_js_removes_lookaheads() {
         let cipher = Cipher::new();
         let player_js = r#"var regex = /(?=lookahead)/; var neg = /(?!negative)/;"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("(?="));
         assert!(!sanitized.contains("(?!"));
@@ -2522,7 +2528,7 @@ mod tests {
     fn test_sanitize_player_js_removes_document_references() {
         let cipher = Cipher::new();
         let player_js = r#"document.getElementById("test"); window.location.href;"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("document."));
         assert!(!sanitized.contains("window."));
@@ -2532,7 +2538,7 @@ mod tests {
     fn test_sanitize_player_js_removes_console_references() {
         let cipher = Cipher::new();
         let player_js = r#"console.log("test"); console.error("error");"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("console."));
     }
@@ -2541,7 +2547,7 @@ mod tests {
     fn test_sanitize_player_js_removes_eval_calls() {
         let cipher = Cipher::new();
         let player_js = r#"eval("code"); new Function("return 1");"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("eval("));
         assert!(!sanitized.contains("new Function("));
@@ -2551,7 +2557,7 @@ mod tests {
     fn test_sanitize_player_js_removes_unicode_escapes() {
         let cipher = Cipher::new();
         let player_js = r#"var str = "\u0041\u0042\u0043";"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("\\u"));
     }
@@ -2560,7 +2566,7 @@ mod tests {
     fn test_sanitize_player_js_removes_template_literals() {
         let cipher = Cipher::new();
         let player_js = r#"var str = `template ${variable} literal`;"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("`"));
     }
@@ -2569,7 +2575,7 @@ mod tests {
     fn test_sanitize_player_js_removes_arrow_functions() {
         let cipher = Cipher::new();
         let player_js = r#"var fn = () => { return 1; };"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         // The sanitization replaces arrow functions with => {}, so we check for that pattern
         assert!(sanitized.contains("=> {}"));
@@ -2579,7 +2585,7 @@ mod tests {
     fn test_sanitize_player_js_removes_async_await() {
         let cipher = Cipher::new();
         let player_js = r#"async function test() { await something(); }"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("async"));
         assert!(!sanitized.contains("await"));
@@ -2589,7 +2595,7 @@ mod tests {
     fn test_sanitize_player_js_removes_classes() {
         let cipher = Cipher::new();
         let player_js = r#"class Test { constructor() {} }"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("class"));
     }
@@ -2598,12 +2604,11 @@ mod tests {
     fn test_sanitize_player_js_removes_imports_exports() {
         let cipher = Cipher::new();
         let player_js = r#"import { test } from 'module'; export const value = 1;"#;
-        
+
         let sanitized = cipher.sanitize_player_js(player_js);
         assert!(!sanitized.contains("import"));
         assert!(!sanitized.contains("export"));
     }
-
 
     #[test]
     fn test_find_decipher_function_name_fallback() {
@@ -2659,7 +2664,9 @@ mod tests {
         let cipher = Cipher::new();
         let signature = "abc123";
 
-        let result = cipher.apply_common_transformation_sequences(signature).await;
+        let result = cipher
+            .apply_common_transformation_sequences(signature)
+            .await;
         assert!(result.is_ok());
         let result_str = result.unwrap();
         assert_ne!(result_str, signature); // Should be different from original
@@ -2709,7 +2716,9 @@ mod tests {
         let signature = "abc123";
         let player_js = "var test = 1;";
 
-        let result = cipher.find_and_apply_transformation_objects(signature, player_js).await;
+        let result = cipher
+            .find_and_apply_transformation_objects(signature, player_js)
+            .await;
         assert!(result.is_err());
     }
 
@@ -2720,7 +2729,9 @@ mod tests {
         let param = "a";
         let body = "return a;";
 
-        let result = cipher.extract_and_apply_transformations(signature, param, body, "").await;
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
         assert!(result.is_err());
     }
 
@@ -2731,7 +2742,9 @@ mod tests {
         let param = "a";
         let body = "obj.reverse(a);";
 
-        let result = cipher.extract_and_apply_transformations(signature, param, body, "").await;
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "321cba");
     }
@@ -2743,7 +2756,9 @@ mod tests {
         let param = "a";
         let body = "obj.splice(a, 2);";
 
-        let result = cipher.extract_and_apply_transformations(signature, param, body, "").await;
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "c123");
     }
@@ -2755,7 +2770,9 @@ mod tests {
         let param = "a";
         let body = "obj.slice(a, 1);";
 
-        let result = cipher.extract_and_apply_transformations(signature, param, body, "").await;
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "bc123");
     }
@@ -2767,7 +2784,9 @@ mod tests {
         let param = "a";
         let body = "obj.swap(a, 2);";
 
-        let result = cipher.extract_and_apply_transformations(signature, param, body, "").await;
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "cba123");
     }
@@ -2779,7 +2798,9 @@ mod tests {
         let param = "a";
         let body = "obj.unknown(a);";
 
-        let result = cipher.extract_and_apply_transformations(signature, param, body, "").await;
+        let result = cipher
+            .extract_and_apply_transformations(signature, param, body, "")
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "abc123"); // Should return original for unknown method
     }

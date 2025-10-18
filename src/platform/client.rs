@@ -773,7 +773,10 @@ mod tests {
         assert_eq!(ClientType::from_str("CHROME"), Some(ClientType::Chrome));
         assert_eq!(ClientType::from_str("android"), Some(ClientType::Android));
         assert_eq!(ClientType::from_str("ios"), Some(ClientType::Ios));
-        assert_eq!(ClientType::from_str("samsung"), Some(ClientType::SamsungBrowser));
+        assert_eq!(
+            ClientType::from_str("samsung"),
+            Some(ClientType::SamsungBrowser)
+        );
         assert_eq!(ClientType::from_str("invalid"), None);
     }
 
@@ -816,7 +819,10 @@ mod tests {
 
     #[test]
     fn test_client_switching_strategy_default() {
-        assert_eq!(ClientSwitchingStrategy::default(), ClientSwitchingStrategy::Smart);
+        assert_eq!(
+            ClientSwitchingStrategy::default(),
+            ClientSwitchingStrategy::Smart
+        );
     }
 
     #[test]
@@ -856,7 +862,7 @@ mod tests {
         let mut client = VideoClient::new();
         let initial_type = client.current_client_type();
         let new_type = client.switch_client();
-        
+
         // Should switch to next client in round-robin
         assert_ne!(initial_type, new_type);
         assert_eq!(client.client_switch_count(), 1);
@@ -866,7 +872,7 @@ mod tests {
     fn test_video_client_switch_to_client() {
         let mut client = VideoClient::new();
         client.switch_to_client(ClientType::Android);
-        
+
         assert_eq!(client.current_client_type(), ClientType::Android);
         assert_eq!(client.client_switch_count(), 1);
     }
@@ -876,11 +882,11 @@ mod tests {
         let mut client = VideoClient::new();
         client.switch_client();
         client.switch_client();
-        
+
         assert!(client.client_switch_count() > 0);
-        
+
         client.reset_client_switching();
-        
+
         assert_eq!(client.client_switch_count(), 0);
         assert_eq!(client.current_client_type(), ClientType::Chrome);
     }
@@ -890,10 +896,10 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.enable_client_switching = false;
         let mut client = VideoClient::with_config(config);
-        
+
         let initial_type = client.current_client_type();
         let new_type = client.switch_client();
-        
+
         // Should not switch when disabled
         assert_eq!(initial_type, new_type);
         assert_eq!(client.client_switch_count(), 0);
@@ -904,10 +910,10 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.switching_strategy = ClientSwitchingStrategy::RoundRobin;
         let mut client = VideoClient::with_config(config);
-        
+
         let initial_type = client.current_client_type();
         let new_type = client.switch_client_by_strategy(None);
-        
+
         // Should switch to next client
         assert_ne!(initial_type, new_type);
     }
@@ -917,10 +923,10 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.switching_strategy = ClientSwitchingStrategy::OnError;
         let mut client = VideoClient::with_config(config);
-        
+
         let error = RytError::RateLimited;
         let new_type = client.switch_client_by_strategy(Some(&error));
-        
+
         // Should switch to Android for rate limiting
         assert_eq!(new_type, ClientType::Android);
     }
@@ -930,10 +936,10 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.switching_strategy = ClientSwitchingStrategy::OnGeoBlock;
         let mut client = VideoClient::with_config(config);
-        
+
         let error = RytError::VideoUnavailable;
         let new_type = client.switch_client_by_strategy(Some(&error));
-        
+
         // Should switch to Android for geo-blocking
         assert_eq!(new_type, ClientType::Android);
     }
@@ -942,7 +948,7 @@ mod tests {
     fn test_video_client_create_request() {
         let client = VideoClient::new();
         let request = client.create_request(reqwest::Method::GET, "https://example.com");
-        
+
         // Request should be created successfully
         assert!(request.try_clone().is_some());
     }
@@ -951,7 +957,7 @@ mod tests {
     fn test_video_client_create_realistic_request() {
         let client = VideoClient::new();
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
-        
+
         // Request should be created successfully
         assert!(request.try_clone().is_some());
     }
@@ -959,8 +965,9 @@ mod tests {
     #[test]
     fn test_video_client_create_simple_media_request() {
         let client = VideoClient::new();
-        let request = client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
-        
+        let request =
+            client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
+
         // Request should be created successfully
         assert!(request.try_clone().is_some());
     }
@@ -969,7 +976,7 @@ mod tests {
     fn test_video_client_create_innertube_request() {
         let client = VideoClient::new();
         let request = client.create_innertube_request("https://example.com");
-        
+
         // Request should be created successfully
         assert!(request.try_clone().is_some());
     }
@@ -979,7 +986,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Android;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -989,7 +996,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Ios;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -999,7 +1006,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Chrome;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1009,7 +1016,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Firefox;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1019,7 +1026,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Safari;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1029,7 +1036,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Edge;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1039,7 +1046,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::AndroidTV;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1049,7 +1056,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Opera;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1059,7 +1066,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::SamsungBrowser;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_realistic_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1069,8 +1076,9 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Android;
         let client = VideoClient::with_config(config);
-        
-        let request = client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
+
+        let request =
+            client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
 
@@ -1079,8 +1087,9 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Ios;
         let client = VideoClient::with_config(config);
-        
-        let request = client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
+
+        let request =
+            client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
 
@@ -1089,8 +1098,9 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Chrome;
         let client = VideoClient::with_config(config);
-        
-        let request = client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
+
+        let request =
+            client.create_simple_media_request(reqwest::Method::GET, "https://example.com");
         assert!(request.try_clone().is_some());
     }
 
@@ -1099,7 +1109,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Android;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1109,7 +1119,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Ios;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1119,7 +1129,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Chrome;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1129,7 +1139,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Firefox;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1139,7 +1149,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Safari;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1149,7 +1159,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Edge;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1159,7 +1169,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::AndroidTV;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1169,7 +1179,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::Opera;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1179,7 +1189,7 @@ mod tests {
         let mut config = HttpClientConfig::default();
         config.client_type = ClientType::SamsungBrowser;
         let client = VideoClient::with_config(config);
-        
+
         let request = client.create_innertube_request("https://example.com");
         assert!(request.try_clone().is_some());
     }
@@ -1192,10 +1202,10 @@ mod tests {
 
         let initial_type = client.current_client_type();
         let new_type = client.switch_client_by_strategy(None);
-        
+
         // Should switch to next client in round robin
         assert_ne!(new_type, initial_type);
-        
+
         let next_type = client.switch_client_by_strategy(None);
         assert_ne!(next_type, new_type);
     }

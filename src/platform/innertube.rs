@@ -639,8 +639,7 @@ mod tests {
 
     #[test]
     fn test_innertube_client_with_client() {
-        let client = InnerTubeClient::new()
-            .with_client("WEB", "2.20251002.00.00");
+        let client = InnerTubeClient::new().with_client("WEB", "2.20251002.00.00");
 
         assert_eq!(client.client_name, "WEB");
         assert_eq!(client.client_version, "2.20251002.00.00");
@@ -648,9 +647,8 @@ mod tests {
 
     #[test]
     fn test_innertube_client_with_visitor_id() {
-        let client = InnerTubeClient::new()
-            .with_visitor_id("test_visitor_123");
-        
+        let client = InnerTubeClient::new().with_visitor_id("test_visitor_123");
+
         assert_eq!(client.visitor_id, Some("test_visitor_123".to_string()));
     }
 
@@ -659,7 +657,7 @@ mod tests {
         let client = InnerTubeClient::new()
             .with_client("IOS", "20.10.38")
             .with_visitor_id("test_visitor_456");
-        
+
         assert_eq!(client.client_name, "IOS");
         assert_eq!(client.client_version, "20.10.38");
         assert_eq!(client.visitor_id, Some("test_visitor_456".to_string()));
@@ -669,7 +667,7 @@ mod tests {
     fn test_innertube_client_switch_client_for_error() {
         let mut client = InnerTubeClient::new();
         let error = RytError::RateLimited;
-        
+
         // Should not panic
         client.switch_client_for_error(&error);
     }
@@ -694,7 +692,10 @@ mod tests {
 
         let format = format.unwrap();
         assert_eq!(format.itag, 22);
-        assert_eq!(format.url, Some("https://example.com/video.mp4".to_string()));
+        assert_eq!(
+            format.url,
+            Some("https://example.com/video.mp4".to_string())
+        );
         assert_eq!(format.mime_type, "video/mp4");
         assert_eq!(format.bitrate, Some(1000000));
         assert_eq!(format.fps, Some(30));
@@ -710,7 +711,7 @@ mod tests {
         let json = r#"{"text": "Test Text"}"#;
         let text_run: Result<TextRun, _> = serde_json::from_str(json);
         assert!(text_run.is_ok());
-        
+
         let text_run = text_run.unwrap();
         assert_eq!(text_run.text, "Test Text");
     }
@@ -724,10 +725,10 @@ mod tests {
                 "height": 180
             }]
         }"#;
-        
+
         let thumbnail: Result<Thumbnail, _> = serde_json::from_str(json);
         assert!(thumbnail.is_ok());
-        
+
         let thumbnail = thumbnail.unwrap();
         assert_eq!(thumbnail.thumbnails.len(), 1);
         assert_eq!(thumbnail.thumbnails[0].url, "https://example.com/thumb.jpg");
@@ -779,7 +780,7 @@ mod tests {
         assert_eq!(video_details.title, "Test Video");
         assert_eq!(video_details.length_seconds, "212");
         assert_eq!(video_details.author, "Test Author");
-        
+
         assert!(response.streaming_data.is_some());
         let streaming_data = response.streaming_data.unwrap();
         assert!(streaming_data.formats.is_some());
@@ -860,27 +861,25 @@ mod tests {
     #[test]
     fn test_innertube_client_methods() {
         let client = InnerTubeClient::new();
-        
+
         // Test client properties
         assert_eq!(client.client_name, "ANDROID");
         assert_eq!(client.client_version, "20.10.38");
         assert!(client.api_key.is_none());
         assert!(client.visitor_id.is_none());
-        
+
         // Test with API key
-        let client_with_key = InnerTubeClient::new()
-            .with_client("TEST_CLIENT", "1.0.0");
+        let client_with_key = InnerTubeClient::new().with_client("TEST_CLIENT", "1.0.0");
         assert_eq!(client_with_key.client_name, "TEST_CLIENT");
         assert_eq!(client_with_key.client_version, "1.0.0");
-        
+
         // Test with visitor ID
-        let client_with_visitor = InnerTubeClient::new()
-            .with_visitor_id("test_visitor_id");
-        assert_eq!(client_with_visitor.visitor_id, Some("test_visitor_id".to_string()));
+        let client_with_visitor = InnerTubeClient::new().with_visitor_id("test_visitor_id");
+        assert_eq!(
+            client_with_visitor.visitor_id,
+            Some("test_visitor_id".to_string())
+        );
     }
-
-
-
 
     #[test]
     fn test_thumbnail_info_deserialization() {
@@ -941,7 +940,10 @@ mod tests {
 
         let format = format.unwrap();
         assert_eq!(format.itag, 137);
-        assert_eq!(format.url, Some("https://example.com/video.mp4".to_string()));
+        assert_eq!(
+            format.url,
+            Some("https://example.com/video.mp4".to_string())
+        );
         assert_eq!(format.mime_type, "video/mp4");
         assert_eq!(format.bitrate, Some(5000000));
         assert_eq!(format.fps, Some(60));
@@ -957,7 +959,7 @@ mod tests {
     #[test]
     fn test_innertube_client_default_values() {
         let client = InnerTubeClient::new();
-        
+
         // Test default values
         assert_eq!(client.client_name, "ANDROID");
         assert_eq!(client.client_version, "20.10.38");
@@ -967,15 +969,13 @@ mod tests {
 
     #[test]
     fn test_innertube_client_with_empty_visitor_id() {
-        let client = InnerTubeClient::new()
-            .with_visitor_id("");
+        let client = InnerTubeClient::new().with_visitor_id("");
         assert_eq!(client.visitor_id, Some("".to_string()));
     }
 
     #[test]
     fn test_innertube_client_with_empty_client_name() {
-        let client = InnerTubeClient::new()
-            .with_client("", "");
+        let client = InnerTubeClient::new().with_client("", "");
         assert_eq!(client.client_name, "");
         assert_eq!(client.client_version, "");
     }
@@ -983,8 +983,7 @@ mod tests {
     #[test]
     fn test_innertube_client_with_long_visitor_id() {
         let long_id = "a".repeat(1000);
-        let client = InnerTubeClient::new()
-            .with_visitor_id(&long_id);
+        let client = InnerTubeClient::new().with_visitor_id(&long_id);
         assert_eq!(client.visitor_id, Some(long_id));
     }
 
@@ -993,10 +992,13 @@ mod tests {
         let client = InnerTubeClient::new()
             .with_client("WEB_EMBEDDED_PLAYER", "1.20231201.00.00")
             .with_visitor_id("visitor-123_456@test.com");
-        
+
         assert_eq!(client.client_name, "WEB_EMBEDDED_PLAYER");
         assert_eq!(client.client_version, "1.20231201.00.00");
-        assert_eq!(client.visitor_id, Some("visitor-123_456@test.com".to_string()));
+        assert_eq!(
+            client.visitor_id,
+            Some("visitor-123_456@test.com".to_string())
+        );
     }
 
     #[test]
@@ -1006,7 +1008,7 @@ mod tests {
             .with_visitor_id("first_visitor")
             .with_client("ANDROID", "20.10.38") // Override previous
             .with_visitor_id("second_visitor"); // Override previous
-        
+
         assert_eq!(client.client_name, "ANDROID");
         assert_eq!(client.client_version, "20.10.38");
         assert_eq!(client.visitor_id, Some("second_visitor".to_string()));
@@ -1018,11 +1020,11 @@ mod tests {
         let long_name = "a".repeat(1000);
         let long_version = "b".repeat(1000);
         let long_visitor = "c".repeat(1000);
-        
+
         let client = InnerTubeClient::new()
             .with_client(&long_name, &long_version)
             .with_visitor_id(&long_visitor);
-        
+
         assert_eq!(client.client_name, long_name);
         assert_eq!(client.client_version, long_version);
         assert_eq!(client.visitor_id, Some(long_visitor));
@@ -1033,7 +1035,7 @@ mod tests {
         let client = InnerTubeClient::new()
             .with_client("客户端", "版本1.0")
             .with_visitor_id("访问者123");
-        
+
         assert_eq!(client.client_name, "客户端");
         assert_eq!(client.client_version, "版本1.0");
         assert_eq!(client.visitor_id, Some("访问者123".to_string()));
@@ -1042,17 +1044,17 @@ mod tests {
     #[test]
     fn test_innertube_client_switch_client_for_different_errors() {
         let mut client = InnerTubeClient::new();
-        
+
         // Test with different error types
         let timeout_error = RytError::TimeoutError("timeout".to_string());
         client.switch_client_for_error(&timeout_error);
-        
+
         let geo_error = RytError::GeoBlocked;
         client.switch_client_for_error(&geo_error);
-        
+
         let rate_error = RytError::RateLimited;
         client.switch_client_for_error(&rate_error);
-        
+
         // Should not panic
         assert_eq!(client.client_name, "ANDROID");
     }

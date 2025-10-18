@@ -180,7 +180,7 @@ mod tests {
     #[tokio::test]
     async fn test_multi_level_cache_creation() {
         let cache = MultiLevelCache::new();
-        
+
         // Test that cache is created successfully
         assert_eq!(cache.get_stats().player_js_entries, 0);
         assert_eq!(cache.get_stats().signature_entries, 0);
@@ -191,7 +191,7 @@ mod tests {
     #[tokio::test]
     async fn test_multi_level_cache_default() {
         let cache = MultiLevelCache::default();
-        
+
         // Test that default cache is created successfully
         assert_eq!(cache.get_stats().player_js_entries, 0);
     }
@@ -199,66 +199,98 @@ mod tests {
     #[tokio::test]
     async fn test_multi_level_cache_player_js() {
         let cache = MultiLevelCache::new();
-        
+
         // Test player.js cache
         assert_eq!(cache.get_player_js("test_url").await, None);
-        
-        cache.set_player_js("test_url", "player_js_content".to_string()).await;
-        assert_eq!(cache.get_player_js("test_url").await, Some("player_js_content".to_string()));
+
+        cache
+            .set_player_js("test_url", "player_js_content".to_string())
+            .await;
+        assert_eq!(
+            cache.get_player_js("test_url").await,
+            Some("player_js_content".to_string())
+        );
     }
 
     #[tokio::test]
     async fn test_multi_level_cache_signature() {
         let cache = MultiLevelCache::new();
-        
+
         // Test signature cache
         assert_eq!(cache.get_signature("test_sig").await, None);
-        
-        cache.set_signature("test_sig", "deciphered_sig".to_string()).await;
-        assert_eq!(cache.get_signature("test_sig").await, Some("deciphered_sig".to_string()));
+
+        cache
+            .set_signature("test_sig", "deciphered_sig".to_string())
+            .await;
+        assert_eq!(
+            cache.get_signature("test_sig").await,
+            Some("deciphered_sig".to_string())
+        );
     }
 
     #[tokio::test]
     async fn test_multi_level_cache_visitor_id() {
         let cache = MultiLevelCache::new();
-        
+
         // Test visitor ID cache
         assert_eq!(cache.get_visitor_id("test_key").await, None);
-        
-        cache.set_visitor_id("test_key", "visitor_id_value".to_string()).await;
-        assert_eq!(cache.get_visitor_id("test_key").await, Some("visitor_id_value".to_string()));
+
+        cache
+            .set_visitor_id("test_key", "visitor_id_value".to_string())
+            .await;
+        assert_eq!(
+            cache.get_visitor_id("test_key").await,
+            Some("visitor_id_value".to_string())
+        );
     }
 
     #[tokio::test]
     async fn test_multi_level_cache_botguard() {
         let cache = MultiLevelCache::new();
-        
+
         // Test botguard cache
         assert_eq!(cache.get_botguard_token("test_key").await, None);
-        
-        cache.set_botguard_token("test_key", "botguard_token".to_string()).await;
-        assert_eq!(cache.get_botguard_token("test_key").await, Some("botguard_token".to_string()));
+
+        cache
+            .set_botguard_token("test_key", "botguard_token".to_string())
+            .await;
+        assert_eq!(
+            cache.get_botguard_token("test_key").await,
+            Some("botguard_token".to_string())
+        );
     }
 
     #[tokio::test]
     async fn test_multi_level_cache_clear_all() {
         let cache = MultiLevelCache::new();
-        
+
         // Add some data to all caches
         cache.set_player_js("url1", "content1".to_string()).await;
         cache.set_signature("sig1", "deciphered1".to_string()).await;
         cache.set_visitor_id("key1", "visitor1".to_string()).await;
         cache.set_botguard_token("key1", "token1".to_string()).await;
-        
+
         // Verify data is there
-        assert_eq!(cache.get_player_js("url1").await, Some("content1".to_string()));
-        assert_eq!(cache.get_signature("sig1").await, Some("deciphered1".to_string()));
-        assert_eq!(cache.get_visitor_id("key1").await, Some("visitor1".to_string()));
-        assert_eq!(cache.get_botguard_token("key1").await, Some("token1".to_string()));
-        
+        assert_eq!(
+            cache.get_player_js("url1").await,
+            Some("content1".to_string())
+        );
+        assert_eq!(
+            cache.get_signature("sig1").await,
+            Some("deciphered1".to_string())
+        );
+        assert_eq!(
+            cache.get_visitor_id("key1").await,
+            Some("visitor1".to_string())
+        );
+        assert_eq!(
+            cache.get_botguard_token("key1").await,
+            Some("token1".to_string())
+        );
+
         // Clear all caches
         cache.clear_all().await;
-        
+
         // Verify all data is gone
         assert_eq!(cache.get_player_js("url1").await, None);
         assert_eq!(cache.get_signature("sig1").await, None);
@@ -269,20 +301,20 @@ mod tests {
     #[tokio::test]
     async fn test_multi_level_cache_stats() {
         let cache = MultiLevelCache::new();
-        
+
         // Initially all stats should be 0
         let stats = cache.get_stats();
         assert_eq!(stats.player_js_entries, 0);
         assert_eq!(stats.signature_entries, 0);
         assert_eq!(stats.visitor_id_entries, 0);
         assert_eq!(stats.botguard_entries, 0);
-        
+
         // Add some data
         cache.set_player_js("url1", "content1".to_string()).await;
         cache.set_signature("sig1", "deciphered1".to_string()).await;
         cache.set_visitor_id("key1", "visitor1".to_string()).await;
         cache.set_botguard_token("key1", "token1".to_string()).await;
-        
+
         // Check stats after adding data
         // Note: moka cache entry_count() might not immediately reflect changes
         // We just verify that the stats are accessible
@@ -297,14 +329,14 @@ mod tests {
             visitor_id_entries: 30,
             botguard_entries: 40,
         };
-        
+
         // Test serialization
         let json = serde_json::to_string(&stats).unwrap();
         assert!(json.contains("player_js_entries"));
         assert!(json.contains("signature_entries"));
         assert!(json.contains("visitor_id_entries"));
         assert!(json.contains("botguard_entries"));
-        
+
         // Test deserialization
         let deserialized: CacheStats = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.player_js_entries, 10);
